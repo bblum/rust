@@ -73,6 +73,9 @@ pub fn check_crate(tcx: ty::ctxt,
     let visit = visit::mk_vt(@visit::Visitor {
         visit_expr: check_expr,
         visit_fn: check_fn,
+        visit_foreign_item: check_foreign_item, // TODO(bblum) remove debug
+        visit_local: check_local,
+        visit_pat: check_pat,
         visit_ty: check_ty,
         visit_item: check_item,
         visit_block: check_block,
@@ -234,7 +237,75 @@ fn check_fn(
         }
     }
 
-    visit::visit_fn(fk, decl, body, sp, fn_id, cx, v);
+    // Check that return type and (possible) self type are statically sized.
+    // Arguments are checked separately in check_pat.
+    let return_type = match ty::get(ty::node_id_to_type(cx.tcx, fn_id)).sty {
+        ty::ty_closure(ref f) => f.sig.output,
+        ty::ty_bare_fn(ref f) => f.sig.output,
+        ref t => cx.tcx.sess.bug(fmt!("bad function type in kindchk: %?", t)),
+    };
+    check_sized(cx, return_type, decl.output.span, "function return type");
+
+    match *fk {
+        visit::fk_method(_, _, method) => match method.explicit_self.node {
+            sty_value => {
+                let self_type = ty::node_id_to_type(cx.tcx, method.self_id);
+                check_sized(cx, self_type, method.explicit_self.span,
+                            "by-value self type");
+            }
+            _ => {}
+        },
+        _ => {}
+    }
+
+    // XXX
+    // visit::visit_fn(fk, decl, body, sp, fn_id, cx, v);
+    for decl.inputs.each |a| {
+        (v.visit_ty)(a.ty, cx, v);
+    }
+    (v.visit_ty)(decl.output, cx, v);
+    (v.visit_generics)(&visit::generics_of_fn(fk), cx, v);
+    (v.visit_block)(body, cx, v);
+}
+
+// XXX remove this whole function
+fn check_foreign_item(ni: @foreign_item, cx: Context, v: visit::vt<Context>) {
+    let e = cx;
+    match ni.node {
+        foreign_item_fn(ref fd, _, ref generics) => {
+            for fd.inputs.each |a| {
+                // (v.visit_pat)(a.pat, e, v);
+                (v.visit_ty)(a.ty, e, v);
+            }
+            (v.visit_ty)(fd.output, e, v);
+            (v.visit_generics)(generics, e, v);
+        }
+        foreign_item_const(t) => {
+            (v.visit_ty)(t, e, v);
+        }
+    }
+
+}
+
+fn check_pat(p: @pat, cx: Context, v: visit::vt<Context>) {
+    // FIXME(#6308): Not sure if this is right. Does pat_bindings combined
+    // with check_pat cause nested patterns to be checked multiple times?
+    do pat_util::pat_bindings(cx.tcx.def_map, p) |mode, node, span, _| {
+        match mode {
+            bind_infer => {
+                check_sized(cx, ty::node_id_to_type(cx.tcx, node), span,
+                            "local variable bound in pattern");
+            }
+            bind_by_ref(*) => {} // OK to reference an unsized type.
+        }
+    }
+    visit::visit_pat(p, cx, v);
+}
+
+fn check_local(loc: @local, cx: Context, v: visit::vt<Context>) {
+    check_sized(cx, ty::node_id_to_type(cx.tcx, loc.node.id), loc.span,
+                "statically-allocated variable");
+    visit::visit_local(loc, cx, v);
 }
 
 pub fn check_expr(e: @expr, cx: Context, v: visit::vt<Context>) {
@@ -292,10 +363,39 @@ pub fn check_expr(e: @expr, cx: Context, v: visit::vt<Context>) {
         }
         expr_repeat(element, count_expr, _) => {
             let count = ty::eval_repeat_count(cx.tcx, count_expr);
+            let element_ty = ty::expr_ty(cx.tcx, element);
             if count > 1 {
-                let element_ty = ty::expr_ty(cx.tcx, element);
                 check_copy(cx, element_ty, element.span,
                            "repeated element will be copied");
+            }
+            check_sized(cx, element_ty, element.span, "vector element");
+        }
+        // Ensure sized bounds when building containers & calling functions
+        expr_vec(ref elts, _) => {
+            for elts.each |elt| {
+                check_sized(cx, ty::expr_ty(cx.tcx, *elt), elt.span,
+                            "vector element");
+            }
+        }
+        expr_call(_, ref args, _) => {
+            // This case is partly a red herring, as fns with dynamically-
+            // sized types get forbidden elsewhere, but enum constructors are
+            // desugared to calls also, and enum definitions can't be checked.
+            for args.each |arg| {
+                check_sized(cx, ty::expr_ty(cx.tcx, *arg), arg.span,
+                            "function argument");
+            }
+        }
+        expr_tup(ref elts) => {
+            for elts.each |elt| {
+                check_sized(cx, ty::expr_ty(cx.tcx, *elt), elt.span,
+                            "tuple element");
+            }
+        }
+        expr_struct(_, ref fields, _) => {
+            for fields.each |f| {
+                check_sized(cx, ty::expr_ty(cx.tcx, f.node.expr),
+                            f.node.expr.span, "struct field");
             }
         }
         _ => {}
@@ -416,6 +516,33 @@ pub fn check_durable(tcx: ty::ctxt, ty: ty::t, sp: span) -> bool {
         false
     } else {
         true
+    }
+}
+
+// We ensure types are statically-sized at the following boundaries, to ensure
+// they are never stored somewhere that isn't immediately behind a pointer:
+// 1. Expressions that build container data structures -- in check_expr
+//   - vectors
+//   - struct fields and tuple elements
+//   - enum elements (expressed as function calls)
+// 2. Binding sites of stack-allocated variables
+//   - global and local decls (let...)                 -- in check_local
+//   - function arguments and pattern bindings         -- in check_pat
+//   - function return types                           -- in check_fn
+fn check_sized(cx: Context, ty: ty::t, sp: span, reason: &str) {
+    if !ty::type_is_sized(cx.tcx, ty) {
+        match ty::get(ty).sty {
+            ty::ty_param(*) => {
+                cx.tcx.sess.span_err(sp,
+                    fmt!("can't use type %s of unknown size as a %s; add \
+                          `Sized' bound", ty_to_str(cx.tcx, ty), reason));
+            }
+            _ => {
+                cx.tcx.sess.span_err(sp,
+                    fmt!("can't use dynamically-sized type %s as a %s",
+                         ty_to_str(cx.tcx, ty), reason));
+            }
+        }
     }
 }
 
