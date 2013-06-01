@@ -2548,15 +2548,38 @@ pub fn type_is_enum(ty: t) -> bool {
 // Is the type's representation size known at compile time?
 pub fn type_is_sized(cx: ctxt, ty: ty::t) -> bool {
     match get(ty).sty {
-        // FIXME(#6308) add trait, vec, str, etc here.
+        /* Container types depend on their elements. */
+        ty_enum(did, ref substs) => {
+            let variants = enum_variants(cx, did);
+            do variants.all |variant| {
+                let tup_ty = mk_tup(cx, /*bad*/copy variant.args);
+                let tup_ty = subst(cx, substs, tup_ty);
+                type_is_sized(cx, tup_ty)
+            }
+        },
+        ty_tup(ref elts) => {
+            do elts.all |elt| { type_is_sized(cx, *elt) }
+        },
+        ty_struct(did, ref substs) => {
+            do lookup_struct_fields(cx, did).all |f| {
+                let fty = ty::lookup_item_type(cx, f.id);
+                let sty = subst(cx, substs, fty.ty);
+                type_is_sized(cx, sty)
+            }
+        },
+        ty_evec(ref mt, vstore_fixed(_)) => {
+            type_is_sized(cx, mt.ty)
+        },
+        /* Type parameters must have "Sized" bound. */
         ty_param(p) => {
             let param_def = cx.ty_param_defs.get(&p.def_id.node);
-            if param_def.bounds.builtin_bounds.contains_elem(BoundSized) {
-                return true;
-            }
-            return false;
+            param_def.bounds.builtin_bounds.contains_elem(BoundSized)
         },
-        _ => return true,
+        /* Dynamically-sized types. */
+        // FIXME(#6308) add bare trait, vec, str, etc => false
+        ty_unboxed_vec(*) => false,
+        /* Primitives and pointers are all sized. */
+        _ => true,
     }
 }
 
