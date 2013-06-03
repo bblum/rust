@@ -90,10 +90,11 @@ pub fn expand_deriving_encodable(cx: @ExtCtxt,
     let trait_def = TraitDef {
         path: Path::new_(~["extra", "serialize", "Encodable"], None,
                          ~[~Literal(Path::new_local("__E"))], true),
-        additional_bounds: ~[],
+        additional_bounds: ~[Literal(Path::new(~["std", "kinds", "Sized"]))],
         generics: LifetimeBounds {
             lifetimes: ~[],
-            bounds: ~[("__E", ~[Path::new(~["extra", "serialize", "Encoder"])])],
+            bounds: ~[("__E", ~[Path::new(~["extra", "serialize", "Encoder"]),
+                                Path::new(~["std", "kinds", "Sized"])])],
         },
         methods: ~[
             MethodDef {

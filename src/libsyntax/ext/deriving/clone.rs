@@ -23,7 +23,7 @@ pub fn expand_deriving_clone(cx: @ExtCtxt,
                           -> ~[@item] {
     let trait_def = TraitDef {
         path: Path::new(~["std", "clone", "Clone"]),
-        additional_bounds: ~[],
+        additional_bounds: ~[Literal(Path::new(~["std", "kinds", "Sized"]))],
         generics: LifetimeBounds::empty(),
         methods: ~[
             MethodDef {
@@ -50,7 +50,7 @@ pub fn expand_deriving_deep_clone(cx: @ExtCtxt,
     -> ~[@item] {
     let trait_def = TraitDef {
         path: Path::new(~["std", "clone", "DeepClone"]),
-        additional_bounds: ~[],
+        additional_bounds: ~[Literal(Path::new(~["std", "kinds", "Sized"]))],
         generics: LifetimeBounds::empty(),
         methods: ~[
             MethodDef {

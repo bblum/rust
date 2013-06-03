@@ -30,10 +30,11 @@ pub fn expand_deriving_decodable(cx: @ExtCtxt,
     let trait_def = TraitDef {
         path: Path::new_(~["extra", "serialize", "Decodable"], None,
                          ~[~Literal(Path::new_local("__D"))], true),
-        additional_bounds: ~[],
+        additional_bounds: ~[Literal(Path::new(~["std", "kinds", "Sized"]))],
         generics: LifetimeBounds {
             lifetimes: ~[],
-            bounds: ~[("__D", ~[Path::new(~["extra", "serialize", "Decoder"])])],
+            bounds: ~[("__D", ~[Path::new(~["extra", "serialize", "Decoder"]),
+                                Path::new(~["std", "kinds", "Sized"])])],
         },
         methods: ~[
             MethodDef {
