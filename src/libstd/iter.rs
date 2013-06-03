@@ -45,6 +45,7 @@ use option::{Option, Some, None};
 use vec::OwnedVector;
 use num::{One, Zero};
 use ops::{Add, Mul};
+use kinds::Sized;
 
 #[allow(missing_doc)]
 pub trait Times {
@@ -63,7 +64,7 @@ pub trait Times {
  * ~~~
  */
 #[inline(always)]
-pub fn to_vec<T>(iter: &fn(f: &fn(T) -> bool) -> bool) -> ~[T] {
+pub fn to_vec<T:Sized>(iter: &fn(f: &fn(T) -> bool) -> bool) -> ~[T] {
     let mut v = ~[];
     for iter |x| { v.push(x) }
     v
@@ -81,7 +82,7 @@ pub fn to_vec<T>(iter: &fn(f: &fn(T) -> bool) -> bool) -> ~[T] {
  * ~~~
  */
 #[inline(always)]
-pub fn any<T>(predicate: &fn(T) -> bool,
+pub fn any<T:Sized>(predicate: &fn(T) -> bool,
               iter: &fn(f: &fn(T) -> bool) -> bool) -> bool {
     for iter |x| {
         if predicate(x) {
@@ -102,7 +103,7 @@ pub fn any<T>(predicate: &fn(T) -> bool,
  * ~~~
  */
 #[inline(always)]
-pub fn all<T>(predicate: &fn(T) -> bool,
+pub fn all<T:Sized>(predicate: &fn(T) -> bool,
               iter: &fn(f: &fn(T) -> bool) -> bool) -> bool {
     // If we ever break, iter will return false, so this will only return true
     // if predicate returns true for everything.
@@ -120,7 +121,7 @@ pub fn all<T>(predicate: &fn(T) -> bool,
  * ~~~
  */
 #[inline(always)]
-pub fn find<T>(predicate: &fn(&T) -> bool,
+pub fn find<T:Sized>(predicate: &fn(&T) -> bool,
                iter: &fn(f: &fn(T) -> bool) -> bool) -> Option<T> {
     for iter |x| {
         if predicate(&x) {
@@ -141,7 +142,7 @@ pub fn find<T>(predicate: &fn(&T) -> bool,
  * ~~~
  */
 #[inline]
-pub fn max<T: Ord>(iter: &fn(f: &fn(T) -> bool) -> bool) -> Option<T> {
+pub fn max<T: Sized + Ord>(iter: &fn(f: &fn(T) -> bool) -> bool) -> Option<T> {
     let mut result = None;
     for iter |x| {
         match result {
@@ -167,7 +168,7 @@ pub fn max<T: Ord>(iter: &fn(f: &fn(T) -> bool) -> bool) -> Option<T> {
  * ~~~
  */
 #[inline]
-pub fn min<T: Ord>(iter: &fn(f: &fn(T) -> bool) -> bool) -> Option<T> {
+pub fn min<T: Sized+Ord>(iter: &fn(f: &fn(T) -> bool) -> bool) -> Option<T> {
     let mut result = None;
     for iter |x| {
         match result {
@@ -192,7 +193,7 @@ pub fn min<T: Ord>(iter: &fn(f: &fn(T) -> bool) -> bool) -> Option<T> {
  * ~~~
  */
 #[inline]
-pub fn fold<T, U>(start: T, iter: &fn(f: &fn(U) -> bool) -> bool, f: &fn(&mut T, U)) -> T {
+pub fn fold<T:Sized, U:Sized>(start: T, iter: &fn(f: &fn(U) -> bool) -> bool, f: &fn(&mut T, U)) -> T {
     let mut result = start;
     for iter |x| {
         f(&mut result, x);
@@ -215,7 +216,7 @@ pub fn fold<T, U>(start: T, iter: &fn(f: &fn(U) -> bool) -> bool, f: &fn(&mut T,
  * ~~~
  */
 #[inline]
-pub fn fold_ref<T, U>(start: T, iter: &fn(f: &fn(&U) -> bool) -> bool, f: &fn(&mut T, &U)) -> T {
+pub fn fold_ref<T: Sized, U>(start: T, iter: &fn(f: &fn(&U) -> bool) -> bool, f: &fn(&mut T, &U)) -> T {
     let mut result = start;
     for iter |x| {
         f(&mut result, x);
@@ -234,7 +235,7 @@ pub fn fold_ref<T, U>(start: T, iter: &fn(f: &fn(&U) -> bool) -> bool, f: &fn(&m
  * ~~~
  */
 #[inline(always)]
-pub fn sum<T: Zero + Add<T, T>>(iter: &fn(f: &fn(&T) -> bool) -> bool) -> T {
+pub fn sum<T: Zero + Sized + Add<T, T>>(iter: &fn(f: &fn(&T) -> bool) -> bool) -> T {
     fold_ref(Zero::zero::<T>(), iter, |a, x| *a = a.add(x))
 }
 
@@ -249,7 +250,7 @@ pub fn sum<T: Zero + Add<T, T>>(iter: &fn(f: &fn(&T) -> bool) -> bool) -> T {
  * ~~~
  */
 #[inline(always)]
-pub fn product<T: One + Mul<T, T>>(iter: &fn(f: &fn(&T) -> bool) -> bool) -> T {
+pub fn product<T: Sized + One + Mul<T, T>>(iter: &fn(f: &fn(&T) -> bool) -> bool) -> T {
     fold_ref(One::one::<T>(), iter, |a, x| *a = a.mul(x))
 }
 

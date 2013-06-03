@@ -92,6 +92,7 @@ use uint;
 use util;
 use unstable::sync::{Exclusive, exclusive};
 use rt::local::Local;
+use kinds::Sized;
 
 #[cfg(test)] use task::default_task_opts;
 #[cfg(test)] use comm;
@@ -161,14 +162,14 @@ struct AncestorList(Option<Exclusive<AncestorNode>>);
 
 // Accessors for taskgroup arcs and ancestor arcs that wrap the unsafety.
 #[inline(always)]
-fn access_group<U>(x: &TaskGroupArc, blk: &fn(TaskGroupInner) -> U) -> U {
+fn access_group<U:Sized>(x: &TaskGroupArc, blk: &fn(TaskGroupInner) -> U) -> U {
     unsafe {
         x.with(blk)
     }
 }
 
 #[inline(always)]
-fn access_ancestors<U>(x: &Exclusive<AncestorNode>,
+fn access_ancestors<U:Sized>(x: &Exclusive<AncestorNode>,
                        blk: &fn(x: &mut AncestorNode) -> U) -> U {
     unsafe {
         x.with(blk)
@@ -297,7 +298,7 @@ fn each_ancestor(list:        &mut AncestorList,
         };
 
         // Wrapper around exclusive::with that appeases borrowck.
-        fn with_parent_tg<U>(parent_group: &mut Option<TaskGroupArc>,
+        fn with_parent_tg<U:Sized>(parent_group: &mut Option<TaskGroupArc>,
                              blk: &fn(TaskGroupInner) -> U) -> U {
             // If this trips, more likely the problem is 'blk' failed inside.
             let tmp_arc = parent_group.swap_unwrap();

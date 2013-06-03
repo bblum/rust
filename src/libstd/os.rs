@@ -43,6 +43,7 @@ use str;
 use uint;
 use unstable::finally::Finally;
 use vec;
+use kinds::Sized;
 
 pub use libc::fclose;
 pub use os::consts::*;
@@ -84,7 +85,7 @@ pub fn getcwd() -> Path {
 
 // FIXME: move these to str perhaps? #2620
 
-pub fn as_c_charp<T>(s: &str, f: &fn(*c_char) -> T) -> T {
+pub fn as_c_charp<T:Sized>(s: &str, f: &fn(*c_char) -> T) -> T {
     str::as_c_str(s, |b| f(b as *c_char))
 }
 
@@ -154,7 +155,7 @@ pub mod win32 {
 Accessing environment variables is not generally threadsafe.
 Serialize access through a global lock.
 */
-fn with_env_lock<T>(f: &fn() -> T) -> T {
+fn with_env_lock<T:Sized>(f: &fn() -> T) -> T {
     use unstable::finally::Finally;
 
     unsafe {

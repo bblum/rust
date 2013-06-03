@@ -21,6 +21,7 @@ use intrinsic::Opaque;
 use libc::c_void;
 use sys;
 use vec;
+use kinds::Sized;
 
 /**
  * Trait for visitor that wishes to reflect on data. To use this, create a
@@ -44,7 +45,7 @@ pub fn align(size: uint, align: uint) -> uint {
 pub struct MovePtrAdaptor<V> {
     inner: V
 }
-pub fn MovePtrAdaptor<V:TyVisitor + MovePtr>(v: V) -> MovePtrAdaptor<V> {
+pub fn MovePtrAdaptor<V:TyVisitor + MovePtr + Sized>(v: V) -> MovePtrAdaptor<V> {
     MovePtrAdaptor { inner: v }
 }
 

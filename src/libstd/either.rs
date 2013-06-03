@@ -15,6 +15,7 @@
 use container::Container;
 use cmp::Eq;
 use kinds::Copy;
+use kinds::Sized;
 use old_iter::BaseIter;
 use result::Result;
 use result;
@@ -34,7 +35,7 @@ pub enum Either<T, U> {
 /// `value` is right(U) then `f_right` is applied to its contents, and the
 /// result is returned.
 #[inline(always)]
-pub fn either<T, U, V>(f_left: &fn(&T) -> V,
+pub fn either<T:Sized, U:Sized, V:Sized>(f_left: &fn(&T) -> V,
                        f_right: &fn(&U) -> V, value: &Either<T, U>) -> V {
     match *value {
         Left(ref l) => f_left(l),
@@ -43,7 +44,7 @@ pub fn either<T, U, V>(f_left: &fn(&T) -> V,
 }
 
 /// Extracts from a vector of either all the left values
-pub fn lefts<T:Copy,U>(eithers: &[Either<T, U>]) -> ~[T] {
+pub fn lefts<T:Copy+Sized,U:Sized>(eithers: &[Either<T, U>]) -> ~[T] {
     do vec::build_sized(eithers.len()) |push| {
         for eithers.each |elt| {
             match *elt {
@@ -55,7 +56,7 @@ pub fn lefts<T:Copy,U>(eithers: &[Either<T, U>]) -> ~[T] {
 }
 
 /// Extracts from a vector of either all the right values
-pub fn rights<T, U: Copy>(eithers: &[Either<T, U>]) -> ~[U] {
+pub fn rights<T:Sized, U: Copy+Sized>(eithers: &[Either<T, U>]) -> ~[U] {
     do vec::build_sized(eithers.len()) |push| {
         for eithers.each |elt| {
             match *elt {
@@ -70,7 +71,7 @@ pub fn rights<T, U: Copy>(eithers: &[Either<T, U>]) -> ~[U] {
 ///
 /// Returns a structure containing a vector of left values and a vector of
 /// right values.
-pub fn partition<T, U>(eithers: ~[Either<T, U>]) -> (~[T], ~[U]) {
+pub fn partition<T:Sized, U:Sized>(eithers: ~[Either<T, U>]) -> (~[T], ~[U]) {
     let mut lefts: ~[T] = ~[];
     let mut rights: ~[U] = ~[];
     do vec::consume(eithers) |_i, elt| {
@@ -84,7 +85,7 @@ pub fn partition<T, U>(eithers: ~[Either<T, U>]) -> (~[T], ~[U]) {
 
 /// Flips between left and right of a given either
 #[inline(always)]
-pub fn flip<T, U>(eith: Either<T, U>) -> Either<U, T> {
+pub fn flip<T:Sized, U:Sized>(eith: Either<T, U>) -> Either<U, T> {
     match eith {
         Right(r) => Left(r),
         Left(l) => Right(l)
@@ -96,7 +97,7 @@ pub fn flip<T, U>(eith: Either<T, U>) -> Either<U, T> {
 /// Converts an `either` type to a `result` type, making the "right" choice
 /// an ok result, and the "left" choice a fail
 #[inline(always)]
-pub fn to_result<T, U>(eith: Either<T, U>) -> Result<U, T> {
+pub fn to_result<T:Sized, U:Sized>(eith: Either<T, U>) -> Result<U, T> {
     match eith {
         Right(r) => result::Ok(r),
         Left(l) => result::Err(l)
@@ -105,7 +106,7 @@ pub fn to_result<T, U>(eith: Either<T, U>) -> Result<U, T> {
 
 /// Checks whether the given value is a left
 #[inline(always)]
-pub fn is_left<T, U>(eith: &Either<T, U>) -> bool {
+pub fn is_left<T:Sized, U:Sized>(eith: &Either<T, U>) -> bool {
     match *eith {
         Left(_) => true,
         _ => false
@@ -114,7 +115,7 @@ pub fn is_left<T, U>(eith: &Either<T, U>) -> bool {
 
 /// Checks whether the given value is a right
 #[inline(always)]
-pub fn is_right<T, U>(eith: &Either<T, U>) -> bool {
+pub fn is_right<T:Sized, U:Sized>(eith: &Either<T, U>) -> bool {
     match *eith {
         Right(_) => true,
         _ => false
@@ -123,7 +124,7 @@ pub fn is_right<T, U>(eith: &Either<T, U>) -> bool {
 
 /// Retrieves the value in the left branch. Fails if the either is Right.
 #[inline(always)]
-pub fn unwrap_left<T,U>(eith: Either<T,U>) -> T {
+pub fn unwrap_left<T:Sized,U:Sized>(eith: Either<T,U>) -> T {
     match eith {
         Left(x) => x,
         Right(_) => fail!("either::unwrap_left Right")
@@ -132,16 +133,16 @@ pub fn unwrap_left<T,U>(eith: Either<T,U>) -> T {
 
 /// Retrieves the value in the right branch. Fails if the either is Left.
 #[inline(always)]
-pub fn unwrap_right<T,U>(eith: Either<T,U>) -> U {
+pub fn unwrap_right<T:Sized,U:Sized>(eith: Either<T,U>) -> U {
     match eith {
         Right(x) => x,
         Left(_) => fail!("either::unwrap_right Left")
     }
 }
 
-impl<T, U> Either<T, U> {
+impl<T:Sized, U:Sized> Either<T, U> {
     #[inline(always)]
-    pub fn either<V>(&self, f_left: &fn(&T) -> V, f_right: &fn(&U) -> V) -> V {
+    pub fn either<V:Sized>(&self, f_left: &fn(&T) -> V, f_right: &fn(&U) -> V) -> V {
         either(f_left, f_right, self)
     }
 

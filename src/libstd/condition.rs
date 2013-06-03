@@ -15,6 +15,7 @@
 use local_data::{local_data_pop, local_data_set};
 use local_data;
 use prelude::*;
+use kinds::Sized;
 
 // helper for transmutation, shown below.
 type RustClosure = (int, int);
@@ -29,7 +30,7 @@ pub struct Condition<'self, T, U> {
     key: local_data::LocalDataKey<'self, Handler<T, U>>
 }
 
-impl<'self, T, U> Condition<'self, T, U> {
+impl<'self, T: Sized, U: Sized> Condition<'self, T, U> {
     pub fn trap(&'self self, h: &'self fn(T) -> U) -> Trap<'self, T, U> {
         unsafe {
             let p : *RustClosure = ::cast::transmute(&h);
@@ -74,7 +75,7 @@ struct Trap<'self, T, U> {
 }
 
 impl<'self, T, U> Trap<'self, T, U> {
-    pub fn in<V>(&self, inner: &'self fn() -> V) -> V {
+    pub fn in<V: Sized>(&self, inner: &'self fn() -> V) -> V {
         unsafe {
             let _g = Guard { cond: self.cond };
             debug!("Trap: pushing handler to TLS");

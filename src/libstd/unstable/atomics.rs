@@ -23,6 +23,7 @@ use cast;
 use option::{Option,Some,None};
 use libc::c_void;
 use ops::Drop;
+use kinds::Sized;
 
 /**
  * A simple atomic flag, that can be set and cleared. The most basic atomic type.
@@ -282,7 +283,7 @@ impl<T> Drop for AtomicOption<T> {
 }
 
 #[inline(always)]
-pub unsafe fn atomic_store<T>(dst: &mut T, val: T, order:Ordering) {
+pub unsafe fn atomic_store<T: Sized>(dst: &mut T, val: T, order:Ordering) {
     let dst = cast::transmute(dst);
     let val = cast::transmute(val);
 
@@ -293,7 +294,7 @@ pub unsafe fn atomic_store<T>(dst: &mut T, val: T, order:Ordering) {
 }
 
 #[inline(always)]
-pub unsafe fn atomic_load<T>(dst: &T, order:Ordering) -> T {
+pub unsafe fn atomic_load<T: Sized>(dst: &T, order:Ordering) -> T {
     let dst = cast::transmute(dst);
 
     cast::transmute(match order {
@@ -303,7 +304,7 @@ pub unsafe fn atomic_load<T>(dst: &T, order:Ordering) -> T {
 }
 
 #[inline(always)]
-pub unsafe fn atomic_swap<T>(dst: &mut T, val: T, order: Ordering) -> T {
+pub unsafe fn atomic_swap<T: Sized>(dst: &mut T, val: T, order: Ordering) -> T {
     let dst = cast::transmute(dst);
     let val = cast::transmute(val);
 
@@ -315,7 +316,7 @@ pub unsafe fn atomic_swap<T>(dst: &mut T, val: T, order: Ordering) -> T {
 }
 
 #[inline(always)]
-pub unsafe fn atomic_add<T>(dst: &mut T, val: T, order: Ordering) -> T {
+pub unsafe fn atomic_add<T: Sized>(dst: &mut T, val: T, order: Ordering) -> T {
     let dst = cast::transmute(dst);
     let val = cast::transmute(val);
 
@@ -327,7 +328,7 @@ pub unsafe fn atomic_add<T>(dst: &mut T, val: T, order: Ordering) -> T {
 }
 
 #[inline(always)]
-pub unsafe fn atomic_sub<T>(dst: &mut T, val: T, order: Ordering) -> T {
+pub unsafe fn atomic_sub<T: Sized>(dst: &mut T, val: T, order: Ordering) -> T {
     let dst = cast::transmute(dst);
     let val = cast::transmute(val);
 
@@ -339,7 +340,7 @@ pub unsafe fn atomic_sub<T>(dst: &mut T, val: T, order: Ordering) -> T {
 }
 
 #[inline(always)]
-pub unsafe fn atomic_compare_and_swap<T>(dst:&mut T, old:T, new:T, order: Ordering) -> T {
+pub unsafe fn atomic_compare_and_swap<T: Sized>(dst:&mut T, old:T, new:T, order: Ordering) -> T {
     let dst = cast::transmute(dst);
     let old = cast::transmute(old);
     let new = cast::transmute(new);

@@ -27,6 +27,7 @@ use uint;
 use vec;
 use kinds::Copy;
 use util::{replace, unreachable};
+use kinds::Sized;
 
 static INITIAL_CAPACITY: uint = 32u; // 2^5
 
@@ -64,14 +65,14 @@ fn resize_at(capacity: uint) -> uint {
 }
 
 /// Creates a new hash map with the specified capacity.
-pub fn linear_map_with_capacity<K:Eq + Hash,V>(
+pub fn linear_map_with_capacity<K:Eq + Hash + Sized,V:Sized>(
     initial_capacity: uint) -> HashMap<K, V> {
     let mut r = rand::task_rng();
     linear_map_with_capacity_and_keys(r.gen(), r.gen(),
                                       initial_capacity)
 }
 
-fn linear_map_with_capacity_and_keys<K:Eq + Hash,V>(
+fn linear_map_with_capacity_and_keys<K:Eq + Hash + Sized,V:Sized>(
     k0: u64, k1: u64,
     initial_capacity: uint) -> HashMap<K, V> {
     let cap = uint::max(INITIAL_CAPACITY, initial_capacity);
@@ -83,7 +84,7 @@ fn linear_map_with_capacity_and_keys<K:Eq + Hash,V>(
     }
 }
 
-impl<K:Hash + Eq,V> HashMap<K, V> {
+impl<K:Hash + Eq + Sized,V: Sized> HashMap<K, V> {
     #[inline(always)]
     fn to_bucket(&self, h: uint) -> uint {
         // A good hash function with entropy spread over all of the
@@ -286,7 +287,7 @@ impl<K:Hash + Eq,V> HashMap<K, V> {
     }
 }
 
-impl<K:Hash + Eq,V> Container for HashMap<K, V> {
+impl<K:Hash + Eq,V: Sized> Container for HashMap<K, V> {
     /// Return the number of elements in the map
     fn len(&const self) -> uint { self.size }
 
@@ -294,7 +295,7 @@ impl<K:Hash + Eq,V> Container for HashMap<K, V> {
     fn is_empty(&const self) -> bool { self.len() == 0 }
 }
 
-impl<K:Hash + Eq,V> Mutable for HashMap<K, V> {
+impl<K:Sized + Hash + Eq,V: Sized> Mutable for HashMap<K, V> {
     /// Clear the map, removing all key-value pairs.
     fn clear(&mut self) {
         for uint::range(0, self.buckets.len()) |idx| {
@@ -304,7 +305,7 @@ impl<K:Hash + Eq,V> Mutable for HashMap<K, V> {
     }
 }
 
-impl<K:Hash + Eq,V> Map<K, V> for HashMap<K, V> {
+impl<K:Hash + Eq + Sized,V: Sized> Map<K, V> for HashMap<K, V> {
     /// Return true if the map contains a value for the specified key
     fn contains_key(&self, k: &K) -> bool {
         match self.bucket_for_key(k) {
@@ -405,7 +406,7 @@ impl<K:Hash + Eq,V> Map<K, V> for HashMap<K, V> {
     }
 }
 
-impl<K: Hash + Eq, V> HashMap<K, V> {
+impl<K: Hash + Eq + Sized, V: Sized> HashMap<K, V> {
     /// Create an empty HashMap
     pub fn new() -> HashMap<K, V> {
         HashMap::with_capacity(INITIAL_CAPACITY)
@@ -427,7 +428,7 @@ impl<K: Hash + Eq, V> HashMap<K, V> {
 
     /// Modify and return the value corresponding to the key in the map, or
     /// insert and return a new value if it doesn't exist.
-    pub fn mangle<'a,A>(&'a mut self, k: K, a: A, not_found: &fn(&K, A) -> V,
+    pub fn mangle<'a,A:Sized>(&'a mut self, k: K, a: A, not_found: &fn(&K, A) -> V,
                         found: &fn(&K, &mut V, A)) -> &'a mut V {
         if self.size >= self.resize_at {
             // n.b.: We could also do this after searching, so
@@ -530,7 +531,7 @@ impl<K: Hash + Eq, V> HashMap<K, V> {
     }
 }
 
-impl<K: Hash + Eq, V: Copy> HashMap<K, V> {
+impl<K: Hash + Eq + Sized, V: Copy + Sized> HashMap<K, V> {
     /// Like `find`, but returns a copy of the value.
     pub fn find_copy(&self, k: &K) -> Option<V> {
         self.find(k).map_consume(|v| copy *v)
@@ -542,7 +543,7 @@ impl<K: Hash + Eq, V: Copy> HashMap<K, V> {
     }
 }
 
-impl<K:Hash + Eq,V:Eq> Eq for HashMap<K, V> {
+impl<K:Hash + Eq + Sized,V:Eq + Sized> Eq for HashMap<K, V> {
     fn eq(&self, other: &HashMap<K, V>) -> bool {
         if self.len() != other.len() { return false; }
 
@@ -566,18 +567,18 @@ pub struct HashSet<T> {
     priv map: HashMap<T, ()>
 }
 
-impl<T:Hash + Eq> BaseIter<T> for HashSet<T> {
+impl<T:Hash + Eq + Sized> BaseIter<T> for HashSet<T> {
     /// Visit all values in order
     fn each(&self, f: &fn(&T) -> bool) -> bool { self.map.each_key(f) }
     fn size_hint(&self) -> Option<uint> { Some(self.len()) }
 }
 
-impl<T:Hash + Eq> Eq for HashSet<T> {
+impl<T:Hash + Eq + Sized> Eq for HashSet<T> {
     fn eq(&self, other: &HashSet<T>) -> bool { self.map == other.map }
     fn ne(&self, other: &HashSet<T>) -> bool { self.map != other.map }
 }
 
-impl<T:Hash + Eq> Container for HashSet<T> {
+impl<T:Hash + Eq + Sized> Container for HashSet<T> {
     /// Return the number of elements in the set
     fn len(&const self) -> uint { self.map.len() }
 
@@ -585,12 +586,12 @@ impl<T:Hash + Eq> Container for HashSet<T> {
     fn is_empty(&const self) -> bool { self.map.is_empty() }
 }
 
-impl<T:Hash + Eq> Mutable for HashSet<T> {
+impl<T:Hash + Eq + Sized> Mutable for HashSet<T> {
     /// Clear the set, removing all values.
     fn clear(&mut self) { self.map.clear() }
 }
 
-impl<T:Hash + Eq> Set<T> for HashSet<T> {
+impl<T:Hash + Eq + Sized> Set<T> for HashSet<T> {
     /// Return true if the set contains a value
     fn contains(&self, value: &T) -> bool { self.map.contains_key(value) }
 
@@ -641,7 +642,7 @@ impl<T:Hash + Eq> Set<T> for HashSet<T> {
     }
 }
 
-impl<T:Hash + Eq> HashSet<T> {
+impl<T:Hash + Eq + Sized> HashSet<T> {
     /// Create an empty HashSet
     pub fn new() -> HashSet<T> {
         HashSet::with_capacity(INITIAL_CAPACITY)

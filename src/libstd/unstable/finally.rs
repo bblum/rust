@@ -26,12 +26,13 @@ do || {
 use ops::Drop;
 
 #[cfg(test)] use task::{failing, spawn};
+use kinds::Sized;
 
 pub trait Finally<T> {
     fn finally(&self, dtor: &fn()) -> T;
 }
 
-impl<'self,T> Finally<T> for &'self fn() -> T {
+impl<'self,T:Sized> Finally<T> for &'self fn() -> T {
     fn finally(&self, dtor: &fn()) -> T {
         let _d = Finallyalizer {
             dtor: dtor
@@ -41,7 +42,7 @@ impl<'self,T> Finally<T> for &'self fn() -> T {
     }
 }
 
-impl<T> Finally<T> for ~fn() -> T {
+impl<T:Sized> Finally<T> for ~fn() -> T {
     fn finally(&self, dtor: &fn()) -> T {
         let _d = Finallyalizer {
             dtor: dtor
@@ -51,7 +52,7 @@ impl<T> Finally<T> for ~fn() -> T {
     }
 }
 
-impl<T> Finally<T> for @fn() -> T {
+impl<T:Sized> Finally<T> for @fn() -> T {
     fn finally(&self, dtor: &fn()) -> T {
         let _d = Finallyalizer {
             dtor: dtor

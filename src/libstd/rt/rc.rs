@@ -22,12 +22,13 @@ use ops::Drop;
 use clone::Clone;
 use libc::c_void;
 use cast;
+use kinds::Sized;
 
 pub struct RC<T> {
     p: *c_void // ~(uint, T)
 }
 
-impl<T> RC<T> {
+impl<T:Sized> RC<T> {
     pub fn new(val: T) -> RC<T> {
         unsafe {
             let v = ~(1, val);
@@ -73,7 +74,7 @@ impl<T> RC<T> {
 }
 
 #[unsafe_destructor]
-impl<T> Drop for RC<T> {
+impl<T:Sized> Drop for RC<T> {
     fn finalize(&self) {
         assert!(self.refcount() > 0);
 
@@ -94,7 +95,7 @@ impl<T> Drop for RC<T> {
     }
 }
 
-impl<T> Clone for RC<T> {
+impl<T:Sized> Clone for RC<T> {
     fn clone(&self) -> RC<T> {
         unsafe {
             // XXX: Mutable clone

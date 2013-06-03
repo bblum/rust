@@ -52,6 +52,7 @@ use uint;
 use util;
 use vec;
 use libc::size_t;
+use kinds::Sized;
 
 #[path="rand/distributions.rs"]
 pub mod distributions;
@@ -60,12 +61,12 @@ pub mod distributions;
 pub trait Rand {
     /// Generates a random instance of this type using the specified source of
     /// randomness
-    fn rand<R: Rng>(rng: &mut R) -> Self;
+    fn rand<R: Rng+Sized>(rng: &mut R) -> Self;
 }
 
 impl Rand for int {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> int {
+    fn rand<R: Rng+Sized>(rng: &mut R) -> int {
         if int::bits == 32 {
             rng.next() as int
         } else {
@@ -76,35 +77,35 @@ impl Rand for int {
 
 impl Rand for i8 {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> i8 {
+    fn rand<R: Rng+Sized>(rng: &mut R) -> i8 {
         rng.next() as i8
     }
 }
 
 impl Rand for i16 {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> i16 {
+    fn rand<R: Rng+Sized>(rng: &mut R) -> i16 {
         rng.next() as i16
     }
 }
 
 impl Rand for i32 {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> i32 {
+    fn rand<R: Rng+Sized>(rng: &mut R) -> i32 {
         rng.next() as i32
     }
 }
 
 impl Rand for i64 {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> i64 {
+    fn rand<R: Rng+Sized>(rng: &mut R) -> i64 {
         (rng.next() as i64 << 32) | rng.next() as i64
     }
 }
 
 impl Rand for uint {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> uint {
+    fn rand<R: Rng+Sized>(rng: &mut R) -> uint {
         if uint::bits == 32 {
             rng.next() as uint
         } else {
@@ -115,42 +116,42 @@ impl Rand for uint {
 
 impl Rand for u8 {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> u8 {
+    fn rand<R: Rng+Sized>(rng: &mut R) -> u8 {
         rng.next() as u8
     }
 }
 
 impl Rand for u16 {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> u16 {
+    fn rand<R: Rng+Sized>(rng: &mut R) -> u16 {
         rng.next() as u16
     }
 }
 
 impl Rand for u32 {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> u32 {
+    fn rand<R: Rng+Sized>(rng: &mut R) -> u32 {
         rng.next()
     }
 }
 
 impl Rand for u64 {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> u64 {
+    fn rand<R: Rng+Sized>(rng: &mut R) -> u64 {
         (rng.next() as u64 << 32) | rng.next() as u64
     }
 }
 
 impl Rand for float {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> float {
+    fn rand<R: Rng+Sized>(rng: &mut R) -> float {
         rng.gen::<f64>() as float
     }
 }
 
 impl Rand for f32 {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> f32 {
+    fn rand<R: Rng+Sized>(rng: &mut R) -> f32 {
         rng.gen::<f64>() as f32
     }
 }
@@ -158,7 +159,7 @@ impl Rand for f32 {
 static scale : f64 = (u32::max_value as f64) + 1.0f64;
 impl Rand for f64 {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> f64 {
+    fn rand<R: Rng+Sized>(rng: &mut R) -> f64 {
         let u1 = rng.next() as f64;
         let u2 = rng.next() as f64;
         let u3 = rng.next() as f64;
@@ -169,14 +170,14 @@ impl Rand for f64 {
 
 impl Rand for char {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> char {
+    fn rand<R: Rng+Sized>(rng: &mut R) -> char {
         rng.next() as char
     }
 }
 
 impl Rand for bool {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> bool {
+    fn rand<R: Rng+Sized>(rng: &mut R) -> bool {
         rng.next() & 1u32 == 1u32
     }
 }
@@ -186,11 +187,11 @@ macro_rules! tuple_impl {
     ($($tyvar:ident),* ) => {
         // the trailing commas are for the 1 tuple
         impl<
-            $( $tyvar : Rand ),*
+            $( $tyvar : Rand + Sized),*
             > Rand for ( $( $tyvar ),* , ) {
 
             #[inline]
-            fn rand<R: Rng>(_rng: &mut R) -> ( $( $tyvar ),* , ) {
+            fn rand<R: Rng+Sized>(_rng: &mut R) -> ( $( $tyvar ),* , ) {
                 (
                     // use the $tyvar's to get the appropriate number of
                     // repeats (they're not actually needed)
@@ -206,7 +207,7 @@ macro_rules! tuple_impl {
 
 impl Rand for () {
     #[inline]
-    fn rand<R: Rng>(_: &mut R) -> () { () }
+    fn rand<R: Rng+Sized>(_: &mut R) -> () { () }
 }
 tuple_impl!{A}
 tuple_impl!{A, B}
@@ -219,9 +220,9 @@ tuple_impl!{A, B, C, D, E, F, G, H}
 tuple_impl!{A, B, C, D, E, F, G, H, I}
 tuple_impl!{A, B, C, D, E, F, G, H, I, J}
 
-impl<T:Rand> Rand for Option<T> {
+impl<T:Rand+Sized> Rand for Option<T> {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> Option<T> {
+    fn rand<R: Rng+Sized>(rng: &mut R) -> Option<T> {
         if rng.gen() {
             Some(rng.gen())
         } else {
@@ -230,14 +231,14 @@ impl<T:Rand> Rand for Option<T> {
     }
 }
 
-impl<T: Rand> Rand for ~T {
+impl<T: Rand+Sized> Rand for ~T {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> ~T { ~rng.gen() }
+    fn rand<R: Rng+Sized>(rng: &mut R) -> ~T { ~rng.gen() }
 }
 
-impl<T: Rand> Rand for @T {
+impl<T: Rand+Sized> Rand for @T {
     #[inline]
-    fn rand<R: Rng>(rng: &mut R) -> @T { @rng.gen() }
+    fn rand<R: Rng+Sized>(rng: &mut R) -> @T { @rng.gen() }
 }
 
 #[abi = "cdecl"]
@@ -267,7 +268,7 @@ pub struct Weighted<T> {
 /// Helper functions attached to the Rng type
 pub trait RngUtil {
     /// Return a random value of a Rand type
-    fn gen<T:Rand>(&mut self) -> T;
+    fn gen<T:Rand+Sized>(&mut self) -> T;
     /**
      * Return a int randomly chosen from the range [start, end),
      * failing if start >= end
@@ -345,9 +346,9 @@ pub trait RngUtil {
      * }
      * ~~~
      */
-    fn choose<T:Copy>(&mut self, values: &[T]) -> T;
+    fn choose<T:Copy+Sized>(&mut self, values: &[T]) -> T;
     /// Choose Some(item) randomly, returning None if values is empty
-    fn choose_option<T:Copy>(&mut self, values: &[T]) -> Option<T>;
+    fn choose_option<T:Copy+Sized>(&mut self, values: &[T]) -> Option<T>;
     /**
      * Choose an item respecting the relative weights, failing if the sum of
      * the weights is 0
@@ -367,7 +368,7 @@ pub trait RngUtil {
      * }
      * ~~~
      */
-    fn choose_weighted<T:Copy>(&mut self, v : &[Weighted<T>]) -> T;
+    fn choose_weighted<T:Copy+Sized>(&mut self, v : &[Weighted<T>]) -> T;
     /**
      * Choose Some(item) respecting the relative weights, returning none if
      * the sum of the weights is 0
@@ -387,7 +388,7 @@ pub trait RngUtil {
      * }
      * ~~~
      */
-    fn choose_weighted_option<T:Copy>(&mut self, v: &[Weighted<T>])
+    fn choose_weighted_option<T:Copy+Sized>(&mut self, v: &[Weighted<T>])
                                      -> Option<T>;
     /**
      * Return a vec containing copies of the items, in order, where
@@ -408,7 +409,7 @@ pub trait RngUtil {
      * }
      * ~~~
      */
-    fn weighted_vec<T:Copy>(&mut self, v: &[Weighted<T>]) -> ~[T];
+    fn weighted_vec<T:Copy+Sized>(&mut self, v: &[Weighted<T>]) -> ~[T];
     /**
      * Shuffle a vec
      *
@@ -424,7 +425,7 @@ pub trait RngUtil {
      * }
      * ~~~
      */
-    fn shuffle<T:Copy>(&mut self, values: &[T]) -> ~[T];
+    fn shuffle<T:Copy+Sized>(&mut self, values: &[T]) -> ~[T];
     /**
      * Shuffle a mutable vec in place
      *
@@ -444,14 +445,14 @@ pub trait RngUtil {
      * }
      * ~~~
      */
-    fn shuffle_mut<T>(&mut self, values: &mut [T]);
+    fn shuffle_mut<T:Sized>(&mut self, values: &mut [T]);
 }
 
 /// Extension methods for random number generators
-impl<R: Rng> RngUtil for R {
+impl<R: Rng+Sized> RngUtil for R {
     /// Return a random value for a Rand type
     #[inline(always)]
-    fn gen<T: Rand>(&mut self) -> T {
+    fn gen<T: Rand+Sized>(&mut self) -> T {
         Rand::rand(self)
     }
 
@@ -516,12 +517,12 @@ impl<R: Rng> RngUtil for R {
     }
 
     /// Choose an item randomly, failing if values is empty
-    fn choose<T:Copy>(&mut self, values: &[T]) -> T {
+    fn choose<T:Copy+Sized>(&mut self, values: &[T]) -> T {
         self.choose_option(values).get()
     }
 
     /// Choose Some(item) randomly, returning None if values is empty
-    fn choose_option<T:Copy>(&mut self, values: &[T]) -> Option<T> {
+    fn choose_option<T:Copy+Sized>(&mut self, values: &[T]) -> Option<T> {
         if values.is_empty() {
             None
         } else {
@@ -532,7 +533,7 @@ impl<R: Rng> RngUtil for R {
      * Choose an item respecting the relative weights, failing if the sum of
      * the weights is 0
      */
-    fn choose_weighted<T:Copy>(&mut self, v: &[Weighted<T>]) -> T {
+    fn choose_weighted<T:Copy+Sized>(&mut self, v: &[Weighted<T>]) -> T {
         self.choose_weighted_option(v).get()
     }
 
@@ -540,7 +541,7 @@ impl<R: Rng> RngUtil for R {
      * Choose Some(item) respecting the relative weights, returning none if
      * the sum of the weights is 0
      */
-    fn choose_weighted_option<T:Copy>(&mut self, v: &[Weighted<T>])
+    fn choose_weighted_option<T:Copy+Sized>(&mut self, v: &[Weighted<T>])
                                      -> Option<T> {
         let mut total = 0u;
         for v.each |item| {
@@ -564,7 +565,7 @@ impl<R: Rng> RngUtil for R {
      * Return a vec containing copies of the items, in order, where
      * the weight of the item determines how many copies there are
      */
-    fn weighted_vec<T:Copy>(&mut self, v: &[Weighted<T>]) -> ~[T] {
+    fn weighted_vec<T:Copy+Sized>(&mut self, v: &[Weighted<T>]) -> ~[T] {
         let mut r = ~[];
         for v.each |item| {
             for uint::range(0u, item.weight) |_i| {
@@ -575,14 +576,14 @@ impl<R: Rng> RngUtil for R {
     }
 
     /// Shuffle a vec
-    fn shuffle<T:Copy>(&mut self, values: &[T]) -> ~[T] {
+    fn shuffle<T:Copy+Sized>(&mut self, values: &[T]) -> ~[T] {
         let mut m = vec::to_owned(values);
         self.shuffle_mut(m);
         m
     }
 
     /// Shuffle a mutable vec in place
-    fn shuffle_mut<T>(&mut self, values: &mut [T]) {
+    fn shuffle_mut<T:Sized>(&mut self, values: &mut [T]) {
         let mut i = values.len();
         while i >= 2u {
             // invariant: elements with index >= i have been locked in place.
@@ -874,7 +875,7 @@ impl<R: Rng> Rng for @@mut R {
  * generator.
  */
 #[inline]
-pub fn random<T: Rand>() -> T {
+pub fn random<T: Rand+Sized>() -> T {
     match *task_rng() {
         @ref mut r => r.gen()
     }

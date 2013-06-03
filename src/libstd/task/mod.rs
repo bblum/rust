@@ -47,6 +47,7 @@ use task::rt::{task_id, sched_id};
 use unstable::finally::Finally;
 use util::replace;
 use util;
+use kinds::Sized;
 
 #[cfg(test)] use cast;
 #[cfg(test)] use comm::SharedChan;
@@ -353,7 +354,7 @@ impl TaskBuilder {
     }
 
     /// Runs a task, while transfering ownership of one argument to the child.
-    pub fn spawn_with<A:Owned>(&mut self, arg: A, f: ~fn(v: A)) {
+    pub fn spawn_with<A:Sized+Owned>(&mut self, arg: A, f: ~fn(v: A)) {
         let arg = Cell::new(arg);
         do self.spawn {
             f(arg.take());
@@ -373,7 +374,7 @@ impl TaskBuilder {
      * # Failure
      * Fails if a future_result was already set for this task.
      */
-    pub fn try<T:Owned>(&mut self, f: ~fn() -> T) -> Result<T,()> {
+    pub fn try<T:Owned+Sized>(&mut self, f: ~fn() -> T) -> Result<T,()> {
         let (po, ch) = stream::<T>();
         let mut result = None;
 
@@ -445,7 +446,7 @@ pub fn spawn_supervised(f: ~fn()) {
     task.spawn(f)
 }
 
-pub fn spawn_with<A:Owned>(arg: A, f: ~fn(v: A)) {
+pub fn spawn_with<A:Owned+Sized>(arg: A, f: ~fn(v: A)) {
     /*!
      * Runs a task, while transfering ownership of one argument to the
      * child.
@@ -478,7 +479,7 @@ pub fn spawn_sched(mode: SchedMode, f: ~fn()) {
     task.spawn(f)
 }
 
-pub fn try<T:Owned>(f: ~fn() -> T) -> Result<T,()> {
+pub fn try<T:Owned+Sized>(f: ~fn() -> T) -> Result<T,()> {
     /*!
      * Execute a function in another task and return either the return value
      * of the function or result::err.
@@ -565,7 +566,7 @@ pub fn get_scheduler() -> Scheduler {
  * }
  * ~~~
  */
-pub unsafe fn unkillable<U>(f: &fn() -> U) -> U {
+pub unsafe fn unkillable<U:Sized>(f: &fn() -> U) -> U {
     if context() == OldTaskContext {
         let t = rt::rust_get_task();
         do (|| {
@@ -581,7 +582,7 @@ pub unsafe fn unkillable<U>(f: &fn() -> U) -> U {
 }
 
 /// The inverse of unkillable. Only ever to be used nested in unkillable().
-pub unsafe fn rekillable<U>(f: &fn() -> U) -> U {
+pub unsafe fn rekillable<U:Sized>(f: &fn() -> U) -> U {
     if context() == OldTaskContext {
         let t = rt::rust_get_task();
         do (|| {
@@ -600,7 +601,7 @@ pub unsafe fn rekillable<U>(f: &fn() -> U) -> U {
  * A stronger version of unkillable that also inhibits scheduling operations.
  * For use with exclusive ARCs, which use pthread mutexes directly.
  */
-pub unsafe fn atomically<U>(f: &fn() -> U) -> U {
+pub unsafe fn atomically<U:Sized>(f: &fn() -> U) -> U {
     if context() == OldTaskContext {
         let t = rt::rust_get_task();
         do (|| {

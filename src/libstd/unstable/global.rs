@@ -41,9 +41,11 @@ use sys::Closure;
 #[cfg(test)] use task::spawn;
 #[cfg(test)] use uint;
 
+use kinds::Sized;
+
 pub type GlobalDataKey<'self,T> = &'self fn(v: T);
 
-pub unsafe fn global_data_clone_create<T:Owned + Clone>(
+pub unsafe fn global_data_clone_create<T:Owned + Clone + Sized>(
     key: GlobalDataKey<T>, create: &fn() -> ~T) -> T {
     /*!
      * Clone a global value or, if it has not been created,
@@ -59,7 +61,7 @@ pub unsafe fn global_data_clone_create<T:Owned + Clone>(
     global_data_clone_create_(key_ptr(key), create)
 }
 
-unsafe fn global_data_clone_create_<T:Owned + Clone>(
+unsafe fn global_data_clone_create_<T:Owned + Clone + Sized>(
     key: uint, create: &fn() -> ~T) -> T {
 
     let mut clone_value: Option<T> = None;
@@ -124,7 +126,7 @@ unsafe fn global_data_modify_<T:Owned>(
     }
 }
 
-pub unsafe fn global_data_clone<T:Owned + Clone>(
+pub unsafe fn global_data_clone<T:Owned + Clone + Sized>(
     key: GlobalDataKey<T>) -> Option<T> {
     let mut maybe_clone: Option<T> = None;
     do global_data_modify(key) |current| {

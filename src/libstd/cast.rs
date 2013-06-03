@@ -12,10 +12,11 @@
 
 use sys;
 use unstable::intrinsics;
+use kinds::Sized;
 
 /// Casts the value at `src` to U. The two types must have the same length.
 #[cfg(stage0)]
-pub unsafe fn transmute_copy<T, U>(src: &T) -> U {
+pub unsafe fn transmute_copy<T, U: Sized>(src: &T) -> U {
     let mut dest: U = intrinsics::uninit();
     {
         let dest_ptr: *mut u8 = transmute(&mut dest);
@@ -30,7 +31,7 @@ pub unsafe fn transmute_copy<T, U>(src: &T) -> U {
 /// Casts the value at `src` to U. The two types must have the same length.
 #[cfg(target_word_size = "32", not(stage0))]
 #[inline(always)]
-pub unsafe fn transmute_copy<T, U>(src: &T) -> U {
+pub unsafe fn transmute_copy<T, U: Sized>(src: &T) -> U {
     let mut dest: U = intrinsics::uninit();
     let dest_ptr: *mut u8 = transmute(&mut dest);
     let src_ptr: *u8 = transmute(src);
@@ -41,7 +42,7 @@ pub unsafe fn transmute_copy<T, U>(src: &T) -> U {
 /// Casts the value at `src` to U. The two types must have the same length.
 #[cfg(target_word_size = "64", not(stage0))]
 #[inline(always)]
-pub unsafe fn transmute_copy<T, U>(src: &T) -> U {
+pub unsafe fn transmute_copy<T, U: Sized>(src: &T) -> U {
     let mut dest: U = intrinsics::uninit();
     let dest_ptr: *mut u8 = transmute(&mut dest);
     let src_ptr: *u8 = transmute(src);
@@ -58,7 +59,7 @@ pub unsafe fn transmute_copy<T, U>(src: &T) -> U {
  * reinterpret_cast on pointer types.
  */
 #[inline(always)]
-pub unsafe fn forget<T>(thing: T) { intrinsics::forget(thing); }
+pub unsafe fn forget<T:Sized>(thing: T) { intrinsics::forget(thing); }
 
 /**
  * Force-increment the reference count on a shared box. If used
@@ -78,7 +79,7 @@ pub unsafe fn bump_box_refcount<T>(t: @T) { forget(t); }
  *     assert!(transmute("L") == ~[76u8, 0u8]);
  */
 #[inline(always)]
-pub unsafe fn transmute<L, G>(thing: L) -> G {
+pub unsafe fn transmute<L: Sized, G: Sized>(thing: L) -> G {
     intrinsics::transmute(thing)
 }
 

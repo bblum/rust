@@ -14,14 +14,15 @@ use cast;
 use ptr;
 use prelude::*;
 use unstable::intrinsics;
+use kinds::Sized;
 
 /// The identity function.
 #[inline(always)]
-pub fn id<T>(x: T) -> T { x }
+pub fn id<T:Sized>(x: T) -> T { x }
 
 /// Ignores a value.
 #[inline(always)]
-pub fn ignore<T>(_x: T) { }
+pub fn ignore<T:Sized>(_x: T) { }
 
 /// Sets `*ptr` to `new_value`, invokes `op()`, and then restores the
 /// original value of `*ptr`.
@@ -31,7 +32,7 @@ pub fn ignore<T>(_x: T) { }
 /// cause borrow check errors because it freezes whatever location
 /// that `&mut T` is stored in (either statically or dynamically).
 #[inline(always)]
-pub fn with<T,R>(
+pub fn with<T:Sized,R: Sized>(
     ptr: @mut T,
     value: T,
     op: &fn() -> R) -> R
@@ -47,7 +48,7 @@ pub fn with<T,R>(
  * deinitialising or copying either one.
  */
 #[inline(always)]
-pub fn swap<T>(x: &mut T, y: &mut T) {
+pub fn swap<T: Sized>(x: &mut T, y: &mut T) {
     unsafe {
         // Give ourselves some scratch space to work with
         let mut tmp: T = intrinsics::uninit();
@@ -69,7 +70,7 @@ pub fn swap<T>(x: &mut T, y: &mut T) {
  * value, without deinitialising or copying either one.
  */
 #[inline(always)]
-pub fn replace<T>(dest: &mut T, mut src: T) -> T {
+pub fn replace<T:Sized>(dest: &mut T, mut src: T) -> T {
     swap(dest, &mut src);
     src
 }

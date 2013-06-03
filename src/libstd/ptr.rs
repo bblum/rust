@@ -16,6 +16,7 @@ use cast;
 use option::{Option, Some, None};
 use sys;
 use unstable::intrinsics;
+use kinds::Sized;
 
 #[cfg(not(test))] use cmp::{Eq, Ord};
 use uint;
@@ -212,7 +213,7 @@ pub unsafe fn set_memory<T>(dst: *mut T, c: u8, count: uint) {
  * deinitialising or copying either one.
  */
 #[inline]
-pub unsafe fn swap_ptr<T>(x: *mut T, y: *mut T) {
+pub unsafe fn swap_ptr<T:Sized>(x: *mut T, y: *mut T) {
     // Give ourselves some scratch space to work with
     let mut tmp: T = intrinsics::uninit();
     let t: *mut T = &mut tmp;
@@ -232,7 +233,7 @@ pub unsafe fn swap_ptr<T>(x: *mut T, y: *mut T) {
  * value, without deinitialising or copying either one.
  */
 #[inline(always)]
-pub unsafe fn replace_ptr<T>(dest: *mut T, mut src: T) -> T {
+pub unsafe fn replace_ptr<T:Sized>(dest: *mut T, mut src: T) -> T {
     swap_ptr(dest, &mut src);
     src
 }

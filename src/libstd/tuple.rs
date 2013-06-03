@@ -13,6 +13,7 @@
 #[allow(missing_doc)];
 
 use kinds::Copy;
+use kinds::Sized;
 use vec;
 
 pub use self::inner::*;
@@ -27,7 +28,7 @@ pub trait CopyableTuple<T, U> {
     fn swap(&self) -> (U, T);
 }
 
-impl<T:Copy,U:Copy> CopyableTuple<T, U> for (T, U) {
+impl<T:Sized+Copy,U:Sized+Copy> CopyableTuple<T, U> for (T, U) {
     /// Return the first element of self
     #[inline(always)]
     fn first(&self) -> T {
@@ -62,7 +63,7 @@ pub trait ImmutableTuple<T, U> {
     fn second_ref<'a>(&'a self) -> &'a U;
 }
 
-impl<T, U> ImmutableTuple<T, U> for (T, U) {
+impl<T:Sized, U:Sized> ImmutableTuple<T, U> for (T, U) {
     #[inline(always)]
     fn first_ref<'a>(&'a self) -> &'a T {
         match *self {
@@ -79,10 +80,10 @@ impl<T, U> ImmutableTuple<T, U> for (T, U) {
 
 pub trait ExtendedTupleOps<A,B> {
     fn zip(&self) -> ~[(A, B)];
-    fn map<C>(&self, f: &fn(a: &A, b: &B) -> C) -> ~[C];
+    fn map<C:Sized>(&self, f: &fn(a: &A, b: &B) -> C) -> ~[C];
 }
 
-impl<'self,A:Copy,B:Copy> ExtendedTupleOps<A,B> for (&'self [A], &'self [B]) {
+impl<'self,A:Sized+Copy,B:Sized+Copy> ExtendedTupleOps<A,B> for (&'self [A], &'self [B]) {
     #[inline(always)]
     fn zip(&self) -> ~[(A, B)] {
         match *self {
@@ -93,7 +94,7 @@ impl<'self,A:Copy,B:Copy> ExtendedTupleOps<A,B> for (&'self [A], &'self [B]) {
     }
 
     #[inline(always)]
-    fn map<C>(&self, f: &fn(a: &A, b: &B) -> C) -> ~[C] {
+    fn map<C:Sized>(&self, f: &fn(a: &A, b: &B) -> C) -> ~[C] {
         match *self {
             (ref a, ref b) => {
                 vec::map_zip(*a, *b, f)
@@ -102,7 +103,7 @@ impl<'self,A:Copy,B:Copy> ExtendedTupleOps<A,B> for (&'self [A], &'self [B]) {
     }
 }
 
-impl<A:Copy,B:Copy> ExtendedTupleOps<A,B> for (~[A], ~[B]) {
+impl<A:Sized+Copy,B:Sized+Copy> ExtendedTupleOps<A,B> for (~[A], ~[B]) {
     #[inline(always)]
     fn zip(&self) -> ~[(A, B)] {
         match *self {
@@ -113,7 +114,7 @@ impl<A:Copy,B:Copy> ExtendedTupleOps<A,B> for (~[A], ~[B]) {
     }
 
     #[inline(always)]
-    fn map<C>(&self, f: &fn(a: &A, b: &B) -> C) -> ~[C] {
+    fn map<C:Sized>(&self, f: &fn(a: &A, b: &B) -> C) -> ~[C] {
         match *self {
             (ref a, ref b) => {
                 vec::map_zip(*a, *b, f)
@@ -134,6 +135,7 @@ macro_rules! tuple_impls {
     )+) => {
         pub mod inner {
             use clone::Clone;
+            use kinds::Sized;
             #[cfg(not(test))] use cmp::*;
 
             $(
@@ -141,7 +143,7 @@ macro_rules! tuple_impls {
                     $(fn $get_fn(&self) -> $T;)+
                 }
 
-                impl<$($T:Clone),+> $cloneable_trait<$($T),+> for ($($T),+) {
+                impl<$($T:Sized+Clone),+> $cloneable_trait<$($T),+> for ($($T),+) {
                     $(
                         #[inline(always)]
                         fn $get_fn(&self) -> $T {
@@ -163,7 +165,7 @@ macro_rules! tuple_impls {
                     )+
                 }
 
-                impl<$($T:Clone),+> Clone for ($($T),+) {
+                impl<$($T:Sized+Clone),+> Clone for ($($T),+) {
                     fn clone(&self) -> ($($T),+) {
                         ($(self.$get_ref_fn().clone()),+)
                     }

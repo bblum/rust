@@ -20,7 +20,7 @@ pub struct DeflateWriter<W> {
     inner_writer: W
 }
 
-impl<W: Writer> DeflateWriter<W> {
+impl<W: Sized+Writer> DeflateWriter<W> {
     pub fn new(inner_writer: W) -> DeflateWriter<W> {
         DeflateWriter {
             inner_writer: inner_writer
@@ -34,7 +34,7 @@ impl<W: Writer> Writer for DeflateWriter<W> {
     fn flush(&mut self) { fail!() }
 }
 
-impl<W: Writer> Decorator<W> for DeflateWriter<W> {
+impl<W: Sized+Writer> Decorator<W> for DeflateWriter<W> {
     fn inner(self) -> W {
         match self {
             DeflateWriter { inner_writer: w } => w
@@ -59,7 +59,7 @@ pub struct InflateReader<R> {
     inner_reader: R
 }
 
-impl<R: Reader> InflateReader<R> {
+impl<R: Reader + Sized> InflateReader<R> {
     pub fn new(inner_reader: R) -> InflateReader<R> {
         InflateReader {
             inner_reader: inner_reader
@@ -73,7 +73,7 @@ impl<R: Reader> Reader for InflateReader<R> {
     fn eof(&mut self) -> bool { fail!() }
 }
 
-impl<R: Reader> Decorator<R> for InflateReader<R> {
+impl<R: Sized+Reader> Decorator<R> for InflateReader<R> {
     fn inner(self) -> R {
         match self {
             InflateReader { inner_reader: r } => r

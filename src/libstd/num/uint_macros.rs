@@ -354,7 +354,7 @@ impl FromStrRadix for $T {
 
 /// Convert to a string as a byte slice in a given base.
 #[inline(always)]
-pub fn to_str_bytes<U>(n: $T, radix: uint, f: &fn(v: &[u8]) -> U) -> U {
+pub fn to_str_bytes<U:Sized>(n: $T, radix: uint, f: &fn(v: &[u8]) -> U) -> U {
     let (buf, _) = strconv::to_str_bytes_common(&n, radix, false,
                             strconv::SignNeg, strconv::DigAll);
     f(buf)

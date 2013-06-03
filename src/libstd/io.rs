@@ -66,6 +66,7 @@ use to_str::ToStr;
 use uint;
 use vec;
 use vec::{OwnedVector, OwnedCopyableVector};
+use kinds::Sized;
 
 #[allow(non_camel_case_types)] // not sure what to do about this
 pub type fd_t = c_int;
@@ -1083,14 +1084,14 @@ impl<'self> Reader for BytesReader<'self> {
     }
 }
 
-pub fn with_bytes_reader<T>(bytes: &[u8], f: &fn(@Reader) -> T) -> T {
+pub fn with_bytes_reader<T:Sized>(bytes: &[u8], f: &fn(@Reader) -> T) -> T {
     f(@BytesReader {
         bytes: bytes,
         pos: @mut 0
     } as @Reader)
 }
 
-pub fn with_str_reader<T>(s: &str, f: &fn(@Reader) -> T) -> T {
+pub fn with_str_reader<T:Sized>(s: &str, f: &fn(@Reader) -> T) -> T {
     str::byte_slice(s, |bytes| with_bytes_reader(bytes, f))
 }
 
@@ -1283,7 +1284,7 @@ pub fn mk_file_writer(path: &Path, flags: &[FileFlag])
     }
 }
 
-pub fn u64_to_le_bytes<T>(n: u64, size: uint,
+pub fn u64_to_le_bytes<T:Sized>(n: u64, size: uint,
                           f: &fn(v: &[u8]) -> T) -> T {
     assert!(size <= 8u);
     match size {
@@ -1317,7 +1318,7 @@ pub fn u64_to_le_bytes<T>(n: u64, size: uint,
     }
 }
 
-pub fn u64_to_be_bytes<T>(n: u64, size: uint,
+pub fn u64_to_be_bytes<T:Sized>(n: u64, size: uint,
                            f: &fn(v: &[u8]) -> T) -> T {
     assert!(size <= 8u);
     match size {
@@ -1742,6 +1743,7 @@ pub fn read_whole_file(file: &Path) -> Result<~[u8], ~str> {
 pub mod fsync {
     use io::{FILERes, FdRes, fd_t};
     use kinds::Copy;
+    use kinds::Sized;
     use libc;
     use ops::Drop;
     use option::{None, Option, Some};
@@ -1766,14 +1768,14 @@ pub mod fsync {
         arg: Arg<t>,
     }
 
-    impl <t: Copy> Res<t> {
+    impl <t: Sized + Copy> Res<t> {
         pub fn new(arg: Arg<t>) -> Res<t> {
             Res { arg: arg }
         }
     }
 
     #[unsafe_destructor]
-    impl<T:Copy> Drop for Res<T> {
+    impl<T:Copy+Sized> Drop for Res<T> {
         fn finalize(&self) {
             match self.arg.opt_level {
                 None => (),

@@ -16,6 +16,7 @@ use cmp::Eq;
 use either;
 use either::Either;
 use kinds::Copy;
+use kinds::Sized;
 use option::{None, Option, Some};
 use old_iter::BaseIter;
 use vec;
@@ -38,7 +39,7 @@ pub enum Result<T, U> {
  * If the result is an error
  */
 #[inline(always)]
-pub fn get<T:Copy,U>(res: &Result<T, U>) -> T {
+pub fn get<T:Copy+Sized,U:Sized>(res: &Result<T, U>) -> T {
     match *res {
       Ok(ref t) => copy *t,
       Err(ref the_err) =>
@@ -54,7 +55,7 @@ pub fn get<T:Copy,U>(res: &Result<T, U>) -> T {
  * If the result is an error
  */
 #[inline(always)]
-pub fn get_ref<'a, T, U>(res: &'a Result<T, U>) -> &'a T {
+pub fn get_ref<'a, T:Sized, U:Sized>(res: &'a Result<T, U>) -> &'a T {
     match *res {
         Ok(ref t) => t,
         Err(ref the_err) =>
@@ -70,7 +71,7 @@ pub fn get_ref<'a, T, U>(res: &'a Result<T, U>) -> &'a T {
  * If the result is not an error
  */
 #[inline(always)]
-pub fn get_err<T, U: Copy>(res: &Result<T, U>) -> U {
+pub fn get_err<T:Sized, U: Copy+Sized>(res: &Result<T, U>) -> U {
     match *res {
       Err(ref u) => copy *u,
       Ok(_) => fail!("get_err called on ok result")
@@ -79,7 +80,7 @@ pub fn get_err<T, U: Copy>(res: &Result<T, U>) -> U {
 
 /// Returns true if the result is `ok`
 #[inline(always)]
-pub fn is_ok<T, U>(res: &Result<T, U>) -> bool {
+pub fn is_ok<T:Sized, U:Sized>(res: &Result<T, U>) -> bool {
     match *res {
       Ok(_) => true,
       Err(_) => false
@@ -88,7 +89,7 @@ pub fn is_ok<T, U>(res: &Result<T, U>) -> bool {
 
 /// Returns true if the result is `err`
 #[inline(always)]
-pub fn is_err<T, U>(res: &Result<T, U>) -> bool {
+pub fn is_err<T:Sized, U:Sized>(res: &Result<T, U>) -> bool {
     !is_ok(res)
 }
 
@@ -99,7 +100,7 @@ pub fn is_err<T, U>(res: &Result<T, U>) -> bool {
  * result variants are converted to `either::left`.
  */
 #[inline(always)]
-pub fn to_either<T:Copy,U:Copy>(res: &Result<U, T>)
+pub fn to_either<T:Copy+Sized,U:Copy+Sized>(res: &Result<U, T>)
     -> Either<T, U> {
     match *res {
       Ok(ref res) => either::Right(copy *res),
@@ -122,7 +123,7 @@ pub fn to_either<T:Copy,U:Copy>(res: &Result<U, T>)
  *     }
  */
 #[inline(always)]
-pub fn chain<T, U, V>(res: Result<T, V>, op: &fn(T)
+pub fn chain<T:Sized, U:Sized, V:Sized>(res: Result<T, V>, op: &fn(T)
     -> Result<U, V>) -> Result<U, V> {
     match res {
         Ok(t) => op(t),
@@ -139,7 +140,7 @@ pub fn chain<T, U, V>(res: Result<T, V>, op: &fn(T)
  * successful result while handling an error.
  */
 #[inline(always)]
-pub fn chain_err<T, U, V>(
+pub fn chain_err<T:Sized, U:Sized, V:Sized>(
     res: Result<T, V>,
     op: &fn(t: V) -> Result<T, U>)
     -> Result<T, U> {
@@ -164,7 +165,7 @@ pub fn chain_err<T, U, V>(
  *     }
  */
 #[inline(always)]
-pub fn iter<T, E>(res: &Result<T, E>, f: &fn(&T)) {
+pub fn iter<T:Sized, E:Sized>(res: &Result<T, E>, f: &fn(&T)) {
     match *res {
       Ok(ref t) => f(t),
       Err(_) => ()
@@ -180,7 +181,7 @@ pub fn iter<T, E>(res: &Result<T, E>, f: &fn(&T)) {
  * handling an error.
  */
 #[inline(always)]
-pub fn iter_err<T, E>(res: &Result<T, E>, f: &fn(&E)) {
+pub fn iter_err<T:Sized, E:Sized>(res: &Result<T, E>, f: &fn(&E)) {
     match *res {
       Ok(_) => (),
       Err(ref e) => f(e)
@@ -202,7 +203,7 @@ pub fn iter_err<T, E>(res: &Result<T, E>, f: &fn(&E)) {
  *     }
  */
 #[inline(always)]
-pub fn map<T, E: Copy, U: Copy>(res: &Result<T, E>, op: &fn(&T) -> U)
+pub fn map<T:Sized, E: Copy+Sized, U: Copy+Sized>(res: &Result<T, E>, op: &fn(&T) -> U)
   -> Result<U, E> {
     match *res {
       Ok(ref t) => Ok(op(t)),
@@ -219,7 +220,7 @@ pub fn map<T, E: Copy, U: Copy>(res: &Result<T, E>, op: &fn(&T) -> U)
  * successful result while handling an error.
  */
 #[inline(always)]
-pub fn map_err<T:Copy,E,F:Copy>(res: &Result<T, E>, op: &fn(&E) -> F)
+pub fn map_err<T:Copy+Sized,E:Sized,F:Copy+Sized>(res: &Result<T, E>, op: &fn(&E) -> F)
   -> Result<T, F> {
     match *res {
       Ok(ref t) => Ok(copy *t),
@@ -227,7 +228,7 @@ pub fn map_err<T:Copy,E,F:Copy>(res: &Result<T, E>, op: &fn(&E) -> F)
     }
 }
 
-impl<T, E> Result<T, E> {
+impl<T:Sized, E:Sized> Result<T, E> {
     #[inline(always)]
     pub fn get_ref<'a>(&'a self) -> &'a T { get_ref(self) }
 
@@ -250,32 +251,32 @@ impl<T, E> Result<T, E> {
     pub fn unwrap_err(self) -> E { unwrap_err(self) }
 
     #[inline(always)]
-    pub fn chain<U>(self, op: &fn(T) -> Result<U,E>) -> Result<U,E> {
+    pub fn chain<U:Sized>(self, op: &fn(T) -> Result<U,E>) -> Result<U,E> {
         chain(self, op)
     }
 
     #[inline(always)]
-    pub fn chain_err<F>(self, op: &fn(E) -> Result<T,F>) -> Result<T,F> {
+    pub fn chain_err<F:Sized>(self, op: &fn(E) -> Result<T,F>) -> Result<T,F> {
         chain_err(self, op)
     }
 }
 
-impl<T:Copy,E> Result<T, E> {
+impl<T:Copy+Sized,E:Sized> Result<T, E> {
     #[inline(always)]
     pub fn get(&self) -> T { get(self) }
 
     #[inline(always)]
-    pub fn map_err<F:Copy>(&self, op: &fn(&E) -> F) -> Result<T,F> {
+    pub fn map_err<F:Copy+Sized>(&self, op: &fn(&E) -> F) -> Result<T,F> {
         map_err(self, op)
     }
 }
 
-impl<T, E: Copy> Result<T, E> {
+impl<T:Sized, E: Copy+Sized> Result<T, E> {
     #[inline(always)]
     pub fn get_err(&self) -> E { get_err(self) }
 
     #[inline(always)]
-    pub fn map<U:Copy>(&self, op: &fn(&T) -> U) -> Result<U,E> {
+    pub fn map<U:Copy+Sized>(&self, op: &fn(&T) -> U) -> Result<U,E> {
         map(self, op)
     }
 }
@@ -298,7 +299,7 @@ impl<T, E: Copy> Result<T, E> {
  *     }
  */
 #[inline(always)]
-pub fn map_vec<T,U:Copy,V:Copy>(
+pub fn map_vec<T:Sized,U:Copy+Sized,V:Copy+Sized>(
     ts: &[T], op: &fn(&T) -> Result<V,U>) -> Result<~[V],U> {
 
     let mut vs: ~[V] = vec::with_capacity(vec::len(ts));
@@ -313,7 +314,7 @@ pub fn map_vec<T,U:Copy,V:Copy>(
 
 #[inline(always)]
 #[allow(missing_doc)]
-pub fn map_opt<T,U:Copy,V:Copy>(
+pub fn map_opt<T:Sized,U:Copy+Sized,V:Copy+Sized>(
     o_t: &Option<T>, op: &fn(&T) -> Result<V,U>) -> Result<Option<V>,U> {
 
     match *o_t {
@@ -335,7 +336,7 @@ pub fn map_opt<T,U:Copy,V:Copy>(
  * to accommodate an error like the vectors being of different lengths.
  */
 #[inline(always)]
-pub fn map_vec2<S,T,U:Copy,V:Copy>(ss: &[S], ts: &[T],
+pub fn map_vec2<S:Sized,T:Sized,U:Copy+Sized,V:Copy+Sized>(ss: &[S], ts: &[T],
                 op: &fn(&S,&T) -> Result<V,U>) -> Result<~[V],U> {
 
     assert!(vec::same_length(ss, ts));
@@ -358,7 +359,7 @@ pub fn map_vec2<S,T,U:Copy,V:Copy>(ss: &[S], ts: &[T],
  * on its own as no result vector is built.
  */
 #[inline(always)]
-pub fn iter_vec2<S,T,U:Copy>(ss: &[S], ts: &[T],
+pub fn iter_vec2<S:Sized,T:Sized,U:Copy+Sized>(ss: &[S], ts: &[T],
                          op: &fn(&S,&T) -> Result<(),U>) -> Result<(),U> {
 
     assert!(vec::same_length(ss, ts));
@@ -376,7 +377,7 @@ pub fn iter_vec2<S,T,U:Copy>(ss: &[S], ts: &[T],
 
 /// Unwraps a result, assuming it is an `ok(T)`
 #[inline(always)]
-pub fn unwrap<T, U>(res: Result<T, U>) -> T {
+pub fn unwrap<T:Sized, U:Sized>(res: Result<T, U>) -> T {
     match res {
       Ok(t) => t,
       Err(_) => fail!("unwrap called on an err result")
@@ -385,7 +386,7 @@ pub fn unwrap<T, U>(res: Result<T, U>) -> T {
 
 /// Unwraps a result, assuming it is an `err(U)`
 #[inline(always)]
-pub fn unwrap_err<T, U>(res: Result<T, U>) -> U {
+pub fn unwrap_err<T:Sized, U:Sized>(res: Result<T, U>) -> U {
     match res {
       Err(u) => u,
       Ok(_) => fail!("unwrap called on an ok result")

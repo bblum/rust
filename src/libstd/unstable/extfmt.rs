@@ -139,7 +139,7 @@ pub mod ct {
         next: uint
     }
 
-    impl<T> Parsed<T> {
+    impl<T: Sized> Parsed<T> {
         pub fn new(val: T, next: uint) -> Parsed<T> {
             Parsed {val: val, next: next}
         }

@@ -18,6 +18,7 @@
 
 use cmp::{Eq, Ord};
 use kinds::Copy;
+use kinds::Sized;
 use option::{None, Option, Some};
 use vec;
 
@@ -41,10 +42,10 @@ pub trait ExtendedIter<A> {
     fn eachi(&self, blk: &fn(uint, v: &A) -> bool) -> bool;
     fn all(&self, blk: &fn(&A) -> bool) -> bool;
     fn any(&self, blk: &fn(&A) -> bool) -> bool;
-    fn foldl<B>(&self, b0: B, blk: &fn(&B, &A) -> B) -> B;
+    fn foldl<B:Sized>(&self, b0: B, blk: &fn(&B, &A) -> B) -> B;
     fn position(&self, f: &fn(&A) -> bool) -> Option<uint>;
-    fn map_to_vec<B>(&self, op: &fn(&A) -> B) -> ~[B];
-    fn flat_map_to_vec<B,IB: BaseIter<B>>(&self, op: &fn(&A) -> IB) -> ~[B];
+    fn map_to_vec<B:Sized>(&self, op: &fn(&A) -> B) -> ~[B];
+    fn flat_map_to_vec<B:Sized,IB: Sized+BaseIter<B>>(&self, op: &fn(&A) -> IB) -> ~[B];
 }
 
 pub trait ExtendedMutableIter<A> {
@@ -130,7 +131,7 @@ pub fn any<A,IA:BaseIter<A>>(this: &IA, blk: &fn(&A) -> bool) -> bool {
 }
 
 #[inline(always)]
-pub fn filter_to_vec<A:Copy,IA:BaseIter<A>>(this: &IA,
+pub fn filter_to_vec<A:Sized+Copy,IA:BaseIter<A>>(this: &IA,
                                             prd: &fn(&A) -> bool)
                                          -> ~[A] {
     do vec::build_sized_opt(this.size_hint()) |push| {
@@ -141,7 +142,7 @@ pub fn filter_to_vec<A:Copy,IA:BaseIter<A>>(this: &IA,
 }
 
 #[inline(always)]
-pub fn map_to_vec<A,B,IA:BaseIter<A>>(this: &IA, op: &fn(&A) -> B) -> ~[B] {
+pub fn map_to_vec<A,B:Sized,IA:BaseIter<A>>(this: &IA, op: &fn(&A) -> B) -> ~[B] {
     do vec::build_sized_opt(this.size_hint()) |push| {
         for this.each |a| {
             push(op(a));
@@ -150,7 +151,7 @@ pub fn map_to_vec<A,B,IA:BaseIter<A>>(this: &IA, op: &fn(&A) -> B) -> ~[B] {
 }
 
 #[inline(always)]
-pub fn flat_map_to_vec<A,B,IA:BaseIter<A>,IB:BaseIter<B>>(this: &IA,
+pub fn flat_map_to_vec<A,B:Sized,IA:BaseIter<A>,IB:Sized+BaseIter<B>>(this: &IA,
                                                           op: &fn(&A) -> IB)
                                                        -> ~[B] {
     do vec::build |push| {
@@ -163,7 +164,7 @@ pub fn flat_map_to_vec<A,B,IA:BaseIter<A>,IB:BaseIter<B>>(this: &IA,
 }
 
 #[inline(always)]
-pub fn foldl<A,B,IA:BaseIter<A>>(this: &IA, b0: B, blk: &fn(&B, &A) -> B)
+pub fn foldl<A,B:Sized,IA:BaseIter<A>>(this: &IA, b0: B, blk: &fn(&B, &A) -> B)
                               -> B {
     let mut b = b0;
     for this.each |a| {
@@ -173,7 +174,7 @@ pub fn foldl<A,B,IA:BaseIter<A>>(this: &IA, b0: B, blk: &fn(&B, &A) -> B)
 }
 
 #[inline(always)]
-pub fn to_vec<A:Copy,IA:BaseIter<A>>(this: &IA) -> ~[A] {
+pub fn to_vec<A:Sized + Copy,IA:BaseIter<A>>(this: &IA) -> ~[A] {
     map_to_vec(this, |&x| x)
 }
 
@@ -212,7 +213,7 @@ pub fn position<A,IA:BaseIter<A>>(this: &IA, f: &fn(&A) -> bool)
 // it would have to be implemented with foldr, which is too inefficient.
 
 #[inline(always)]
-pub fn min<A:Copy + Ord,IA:BaseIter<A>>(this: &IA) -> A {
+pub fn min<A:Sized + Copy + Ord,IA:BaseIter<A>>(this: &IA) -> A {
     match do foldl::<A,Option<A>,IA>(this, None) |a, b| {
         match a {
           &Some(ref a_) if *a_ < *b => {
@@ -227,7 +228,7 @@ pub fn min<A:Copy + Ord,IA:BaseIter<A>>(this: &IA) -> A {
 }
 
 #[inline(always)]
-pub fn max<A:Copy + Ord,IA:BaseIter<A>>(this: &IA) -> A {
+pub fn max<A:Sized + Copy + Ord,IA:BaseIter<A>>(this: &IA) -> A {
     match do foldl::<A,Option<A>,IA>(this, None) |a, b| {
         match a {
           &Some(ref a_) if *a_ > *b => {
@@ -242,7 +243,7 @@ pub fn max<A:Copy + Ord,IA:BaseIter<A>>(this: &IA) -> A {
 }
 
 #[inline(always)]
-pub fn find<A:Copy,IA:BaseIter<A>>(this: &IA, f: &fn(&A) -> bool)
+pub fn find<A:Sized + Copy,IA:BaseIter<A>>(this: &IA, f: &fn(&A) -> bool)
                                 -> Option<A> {
     for this.each |i| {
         if f(i) { return Some(*i) }
@@ -263,7 +264,7 @@ pub fn find<A:Copy,IA:BaseIter<A>>(this: &IA, f: &fn(&A) -> bool)
  *             onto the sequence being constructed.
  */
 #[inline(always)]
-pub fn build<A,B: Buildable<A>>(builder: &fn(push: &fn(A))) -> B {
+pub fn build<A:Sized ,B: Sized + Buildable<A>>(builder: &fn(push: &fn(A))) -> B {
     Buildable::build_sized(4, builder)
 }
 
@@ -281,7 +282,7 @@ pub fn build<A,B: Buildable<A>>(builder: &fn(push: &fn(A))) -> B {
  *             onto the sequence being constructed.
  */
 #[inline(always)]
-pub fn build_sized_opt<A,B: Buildable<A>>(size: Option<uint>,
+pub fn build_sized_opt<A: Sized,B: Sized + Buildable<A>>(size: Option<uint>,
                                           builder: &fn(push: &fn(A))) -> B {
     Buildable::build_sized(size.get_or_default(4), builder)
 }
@@ -291,7 +292,7 @@ pub fn build_sized_opt<A,B: Buildable<A>>(size: Option<uint>,
 /// Applies a function to each element of an iterable and returns the results
 /// in a sequence built via `BU`.  See also `map_to_vec`.
 #[inline(always)]
-pub fn map<T,IT: BaseIter<T>,U,BU: Buildable<U>>(v: &IT, f: &fn(&T) -> U)
+pub fn map<T,IT: BaseIter<T>,U: Sized,BU: Sized + Buildable<U>>(v: &IT, f: &fn(&T) -> U)
     -> BU {
     do build_sized_opt(v.size_hint()) |push| {
         for v.each() |elem| {
@@ -307,7 +308,7 @@ pub fn map<T,IT: BaseIter<T>,U,BU: Buildable<U>>(v: &IT, f: &fn(&T) -> U)
  * to the value returned by the function `op`.
  */
 #[inline(always)]
-pub fn from_fn<T,BT: Buildable<T>>(n_elts: uint, op: InitOp<T>) -> BT {
+pub fn from_fn<T: Sized,BT: Sized + Buildable<T>>(n_elts: uint, op: InitOp<T>) -> BT {
     do Buildable::build_sized(n_elts) |push| {
         let mut i: uint = 0u;
         while i < n_elts { push(op(i)); i += 1u; }
@@ -321,7 +322,7 @@ pub fn from_fn<T,BT: Buildable<T>>(n_elts: uint, op: InitOp<T>) -> BT {
  * to the value `t`.
  */
 #[inline(always)]
-pub fn from_elem<T:Copy,BT:Buildable<T>>(n_elts: uint, t: T) -> BT {
+pub fn from_elem<T:Sized+Copy,BT:Sized + Buildable<T>>(n_elts: uint, t: T) -> BT {
     do Buildable::build_sized(n_elts) |push| {
         let mut i: uint = 0;
         while i < n_elts { push(t); i += 1; }
@@ -330,7 +331,7 @@ pub fn from_elem<T:Copy,BT:Buildable<T>>(n_elts: uint, t: T) -> BT {
 
 /// Appends two generic sequences.
 #[inline(always)]
-pub fn append<T:Copy,IT:BaseIter<T>,BT:Buildable<T>>(lhs: &IT, rhs: &IT)
+pub fn append<T:Sized+Copy,IT:BaseIter<T>,BT:Sized + Buildable<T>>(lhs: &IT, rhs: &IT)
                                                   -> BT {
     let size_opt = lhs.size_hint().chain_ref(
         |sz1| rhs.size_hint().map(|sz2| *sz1+*sz2));
@@ -343,7 +344,7 @@ pub fn append<T:Copy,IT:BaseIter<T>,BT:Buildable<T>>(lhs: &IT, rhs: &IT)
 /// Copies a generic sequence, possibly converting it to a different
 /// type of sequence.
 #[inline(always)]
-pub fn copy_seq<T:Copy,IT:BaseIter<T>,BT:Buildable<T>>(v: &IT) -> BT {
+pub fn copy_seq<T:Sized+Copy,IT:BaseIter<T>,BT:Sized + Buildable<T>>(v: &IT) -> BT {
     do build_sized_opt(v.size_hint()) |push| {
         for v.each |x| { push(*x); }
     }

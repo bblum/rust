@@ -14,6 +14,7 @@ use prelude::*;
 use uint;
 use util::{swap, replace};
 use vec;
+use kinds::Sized;
 
 // FIXME: #5244: need to manually update the TrieNode constructor
 static SHIFT: uint = 4;
@@ -32,7 +33,7 @@ pub struct TrieMap<T> {
     priv length: uint
 }
 
-impl<T> Container for TrieMap<T> {
+impl<T:Sized> Container for TrieMap<T> {
     /// Return the number of elements in the map
     #[inline(always)]
     fn len(&const self) -> uint { self.length }
@@ -42,7 +43,7 @@ impl<T> Container for TrieMap<T> {
     fn is_empty(&const self) -> bool { self.len() == 0 }
 }
 
-impl<T> Mutable for TrieMap<T> {
+impl<T:Sized> Mutable for TrieMap<T> {
     /// Clear the map, removing all values.
     #[inline(always)]
     fn clear(&mut self) {
@@ -51,7 +52,7 @@ impl<T> Mutable for TrieMap<T> {
     }
 }
 
-impl<T> Map<uint, T> for TrieMap<T> {
+impl<T:Sized> Map<uint, T> for TrieMap<T> {
     /// Return true if the map contains a value for the specified key
     #[inline(always)]
     fn contains_key(&self, key: &uint) -> bool {
@@ -145,7 +146,7 @@ impl<T> Map<uint, T> for TrieMap<T> {
     }
 }
 
-impl<T> TrieMap<T> {
+impl<T:Sized> TrieMap<T> {
     /// Create an empty TrieMap
     #[inline(always)]
     pub fn new() -> TrieMap<T> {
@@ -241,7 +242,7 @@ struct TrieNode<T> {
     children: [Child<T>, ..SIZE]
 }
 
-impl<T> TrieNode<T> {
+impl<T:Sized> TrieNode<T> {
     #[inline(always)]
     fn new() -> TrieNode<T> {
         // FIXME: #5244: [Nothing, ..SIZE] should be possible without Copy
@@ -253,7 +254,7 @@ impl<T> TrieNode<T> {
     }
 }
 
-impl<T> TrieNode<T> {
+impl<T:Sized> TrieNode<T> {
     fn each<'a>(&'a self, f: &fn(&uint, &'a T) -> bool) -> bool {
         for uint::range(0, self.children.len()) |idx| {
             match self.children[idx] {
@@ -305,7 +306,7 @@ fn find_mut<'r, T>(child: &'r mut Child<T>, key: uint, idx: uint) -> Option<&'r 
     }
 }
 
-fn insert<T>(count: &mut uint, child: &mut Child<T>, key: uint, value: T,
+fn insert<T:Sized>(count: &mut uint, child: &mut Child<T>, key: uint, value: T,
              idx: uint) -> Option<T> {
     let mut tmp = Nothing;
     let ret;
@@ -342,7 +343,7 @@ fn insert<T>(count: &mut uint, child: &mut Child<T>, key: uint, value: T,
     return ret;
 }
 
-fn remove<T>(count: &mut uint, child: &mut Child<T>, key: uint,
+fn remove<T:Sized>(count: &mut uint, child: &mut Child<T>, key: uint,
              idx: uint) -> Option<T> {
     let (ret, this) = match *child {
       External(stored, _) if stored == key => {

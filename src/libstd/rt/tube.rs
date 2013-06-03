@@ -21,6 +21,7 @@ use rt::{context, TaskContext, SchedulerContext};
 use rt::local::Local;
 use vec::OwnedVector;
 use container::Container;
+use kinds::Sized;
 
 struct TubeState<T> {
     blocked_task: Option<~Coroutine>,
@@ -31,7 +32,7 @@ pub struct Tube<T> {
     p: RC<TubeState<T>>
 }
 
-impl<T> Tube<T> {
+impl<T:Sized> Tube<T> {
     pub fn new() -> Tube<T> {
         Tube {
             p: RC::new(TubeState {
@@ -84,7 +85,7 @@ impl<T> Tube<T> {
     }
 }
 
-impl<T> Clone for Tube<T> {
+impl<T:Sized> Clone for Tube<T> {
     fn clone(&self) -> Tube<T> {
         Tube { p: self.p.clone() }
     }

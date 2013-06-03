@@ -36,6 +36,7 @@ use to_str::ToStr;
 use uint;
 use vec;
 use vec::{OwnedVector, OwnedCopyableVector};
+use kinds::Sized;
 
 #[cfg(not(test))] use cmp::{Eq, Ord, Equiv, TotalEq};
 
@@ -575,7 +576,7 @@ pub fn to_bytes(s: &str) -> ~[u8] {
 
 /// Work with the string as a byte slice, not including trailing null.
 #[inline(always)]
-pub fn byte_slice<T>(s: &str, f: &fn(v: &[u8]) -> T) -> T {
+pub fn byte_slice<T:Sized>(s: &str, f: &fn(v: &[u8]) -> T) -> T {
     do as_buf(s) |p,n| {
         unsafe { vec::raw::buf_as_slice(p, n-1u, f) }
     }
@@ -2199,7 +2200,7 @@ static tag_six_b: uint = 252u;
  * ~~~
  */
 #[inline]
-pub fn as_bytes<T>(s: &const ~str, f: &fn(&~[u8]) -> T) -> T {
+pub fn as_bytes<T:Sized>(s: &const ~str, f: &fn(&~[u8]) -> T) -> T {
     unsafe {
         let v: *~[u8] = cast::transmute(copy s);
         f(&*v)
@@ -2238,12 +2239,12 @@ pub trait StrUtil {
      * let s = "PATH".as_c_str(|path| libc::getenv(path));
      * ~~~
      */
-    fn as_c_str<T>(self, f: &fn(*libc::c_char) -> T) -> T;
+    fn as_c_str<T:Sized>(self, f: &fn(*libc::c_char) -> T) -> T;
 }
 
 impl<'self> StrUtil for &'self str {
     #[inline]
-    fn as_c_str<T>(self, f: &fn(*libc::c_char) -> T) -> T {
+    fn as_c_str<T:Sized>(self, f: &fn(*libc::c_char) -> T) -> T {
         do as_buf(self) |buf, len| {
             // NB: len includes the trailing null.
             assert!(len > 0);
@@ -2260,7 +2261,7 @@ impl<'self> StrUtil for &'self str {
  * Deprecated. Use the `as_c_str` method on strings instead.
  */
 #[inline(always)]
-pub fn as_c_str<T>(s: &str, f: &fn(*libc::c_char) -> T) -> T {
+pub fn as_c_str<T:Sized>(s: &str, f: &fn(*libc::c_char) -> T) -> T {
     s.as_c_str(f)
 }
 
@@ -2273,7 +2274,7 @@ pub fn as_c_str<T>(s: &str, f: &fn(*libc::c_char) -> T) -> T {
  * to full strings, or suffixes of them.
  */
 #[inline(always)]
-pub fn as_buf<T>(s: &str, f: &fn(*u8, uint) -> T) -> T {
+pub fn as_buf<T:Sized>(s: &str, f: &fn(*u8, uint) -> T) -> T {
     unsafe {
         let v : *(*u8,uint) = transmute(&s);
         let (buf,len) = *v;
@@ -2404,6 +2405,7 @@ pub mod raw {
     use str::raw;
     use str::{as_buf, is_utf8, len, reserve_at_least};
     use vec;
+    use kinds::Sized;
 
     /// Create a Rust string from a null-terminated *u8 buffer
     pub unsafe fn from_buf(buf: *u8) -> ~str {
@@ -2456,7 +2458,7 @@ pub mod raw {
     pub unsafe fn from_byte(u: u8) -> ~str { raw::from_bytes([u]) }
 
     /// Form a slice from a *u8 buffer of the given length without copying.
-    pub unsafe fn buf_as_slice<T>(buf: *u8, len: uint,
+    pub unsafe fn buf_as_slice<T:Sized>(buf: *u8, len: uint,
                               f: &fn(v: &str) -> T) -> T {
         let v = (buf, len + 1);
         assert!(is_utf8(::cast::transmute(v)));

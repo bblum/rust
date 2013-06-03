@@ -25,6 +25,7 @@ use ptr;
 use str;
 use task;
 use vec;
+use kinds::Sized;
 
 /**
  * A value representing a child process.
@@ -693,7 +694,7 @@ fn spawn_process_os(prog: &str, args: &[~str],
 }
 
 #[cfg(unix)]
-fn with_argv<T>(prog: &str, args: &[~str],
+fn with_argv<T: Sized>(prog: &str, args: &[~str],
                 cb: &fn(**libc::c_char) -> T) -> T {
     let mut argptrs = ~[str::as_c_str(prog, |b| b)];
     let mut tmps = ~[];
@@ -707,7 +708,7 @@ fn with_argv<T>(prog: &str, args: &[~str],
 }
 
 #[cfg(unix)]
-fn with_envp<T>(env: Option<&[(~str, ~str)]>, cb: &fn(*c_void) -> T) -> T {
+fn with_envp<T: Sized>(env: Option<&[(~str, ~str)]>, cb: &fn(*c_void) -> T) -> T {
     // On posixy systems we can pass a char** for envp, which is
     // a null-terminated array of "k=v\n" strings.
     match env {
@@ -731,7 +732,7 @@ fn with_envp<T>(env: Option<&[(~str, ~str)]>, cb: &fn(*c_void) -> T) -> T {
 }
 
 #[cfg(windows)]
-fn with_envp<T>(env: Option<&[(~str, ~str)]>, cb: &fn(*mut c_void) -> T) -> T {
+fn with_envp<T: Sized>(env: Option<&[(~str, ~str)]>, cb: &fn(*mut c_void) -> T) -> T {
     // On win32 we pass an "environment block" which is not a char**, but
     // rather a concatenation of null-terminated k=v\0 sequences, with a final
     // \0 to terminate.
@@ -752,7 +753,7 @@ fn with_envp<T>(env: Option<&[(~str, ~str)]>, cb: &fn(*mut c_void) -> T) -> T {
     }
 }
 
-fn with_dirp<T>(d: Option<&Path>,
+fn with_dirp<T: Sized>(d: Option<&Path>,
                 cb: &fn(*libc::c_char) -> T) -> T {
     match d {
       Some(dir) => str::as_c_str(dir.to_str(), cb),

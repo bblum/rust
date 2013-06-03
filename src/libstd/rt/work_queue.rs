@@ -15,13 +15,14 @@ use unstable::sync::{Exclusive, exclusive};
 use cell::Cell;
 use kinds::Owned;
 use clone::Clone;
+use kinds::Sized;
 
 pub struct WorkQueue<T> {
     // XXX: Another mystery bug fixed by boxing this lock
     priv queue: ~Exclusive<~[T]>
 }
 
-impl<T: Owned> WorkQueue<T> {
+impl<T: Sized+Owned> WorkQueue<T> {
     pub fn new() -> WorkQueue<T> {
         WorkQueue {
             queue: ~exclusive(~[])

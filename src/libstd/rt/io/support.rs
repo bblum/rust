@@ -9,19 +9,20 @@
 // except according to those terms.
 
 use path::*;
+use kinds::Sized;
 
 pub trait PathLike {
-    fn path_as_str<T>(&self, f: &fn(&str) -> T) -> T;
+    fn path_as_str<T:Sized>(&self, f: &fn(&str) -> T) -> T;
 }
 
 impl<'self> PathLike for &'self str {
-    fn path_as_str<T>(&self, f: &fn(&str) -> T) -> T {
+    fn path_as_str<T:Sized>(&self, f: &fn(&str) -> T) -> T {
         f(*self)
     }
 }
 
 impl PathLike for Path {
-    fn path_as_str<T>(&self, f: &fn(&str) -> T) -> T {
+    fn path_as_str<T:Sized>(&self, f: &fn(&str) -> T) -> T {
         let s = self.to_str();
         f(s)
     }

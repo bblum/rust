@@ -22,6 +22,8 @@ and `Eq` to overload the `==` and `!=` operators.
 
 #[allow(missing_doc)];
 
+use kinds::Sized;
+
 /**
 * Trait for values that can be compared for equality and inequality.
 *
@@ -211,12 +213,12 @@ pub trait Equiv<T> {
 }
 
 #[inline(always)]
-pub fn min<T:Ord>(v1: T, v2: T) -> T {
+pub fn min<T:Sized+Ord>(v1: T, v2: T) -> T {
     if v1 < v2 { v1 } else { v2 }
 }
 
 #[inline(always)]
-pub fn max<T:Ord>(v1: T, v2: T) -> T {
+pub fn max<T:Sized+Ord>(v1: T, v2: T) -> T {
     if v1 > v2 { v1 } else { v2 }
 }
 

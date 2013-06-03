@@ -17,8 +17,9 @@ use rt::uv::{Loop, Watcher, Request, UvError, Buf, NativeHandle, NullCallback,
              status_to_maybe_uv_error};
 use rt::io::net::ip::{IpAddr, Ipv4, Ipv6};
 use rt::uv::last_uv_error;
+use kinds::Sized;
 
-fn ip4_as_uv_ip4<T>(addr: IpAddr, f: &fn(*sockaddr_in) -> T) -> T {
+fn ip4_as_uv_ip4<T:Sized>(addr: IpAddr, f: &fn(*sockaddr_in) -> T) -> T {
     match addr {
         Ipv4(a, b, c, d, p) => {
             unsafe {

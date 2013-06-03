@@ -17,6 +17,7 @@ use ops::{Add, Sub, Mul, Div, Rem, Neg};
 use ops::{Not, BitAnd, BitOr, BitXor, Shl, Shr};
 use option::Option;
 use kinds::Copy;
+use kinds::Sized;
 
 pub mod strconv;
 
@@ -68,7 +69,7 @@ pub trait Signed: Num
 pub trait Unsigned: Num {}
 
 // This should be moved into the default implementation for Signed::abs
-pub fn abs<T:Ord + Zero + Neg<T>>(v: T) -> T {
+pub fn abs<T:Sized + Ord + Zero + Neg<T>>(v: T) -> T {
     if v < Zero::zero() { v.neg() } else { v }
 }
 
@@ -308,7 +309,7 @@ pub trait Float: Real
 /// ~~~
 ///
 #[inline(always)]
-pub fn cast<T:NumCast,U:NumCast>(n: T) -> U {
+pub fn cast<T:Sized + NumCast,U:Sized + NumCast>(n: T) -> U {
     NumCast::from(n)
 }
 
@@ -399,7 +400,7 @@ pub trait FromStrRadix {
 /// - If code written to use this function doesn't care about it, it's
 ///   probably assuming that `x^0` always equals `1`.
 ///
-pub fn pow_with_uint<T:NumCast+One+Zero+Copy+Div<T,T>+Mul<T,T>>(radix: uint, pow: uint) -> T {
+pub fn pow_with_uint<T:Sized + NumCast+One+Zero+Copy+Div<T,T>+Mul<T,T>>(radix: uint, pow: uint) -> T {
     let _0: T = Zero::zero();
     let _1: T = One::one();
 
@@ -420,7 +421,7 @@ pub fn pow_with_uint<T:NumCast+One+Zero+Copy+Div<T,T>+Mul<T,T>>(radix: uint, pow
 
 /// Helper function for testing numeric operations
 #[cfg(test)]
-pub fn test_num<T:Num + NumCast>(ten: T, two: T) {
+pub fn test_num<T:Sized + Num + NumCast>(ten: T, two: T) {
     assert_eq!(ten.add(&two),  cast(12));
     assert_eq!(ten.sub(&two),  cast(8));
     assert_eq!(ten.mul(&two),  cast(20));

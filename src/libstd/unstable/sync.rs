@@ -18,6 +18,7 @@ use unstable::intrinsics;
 use ops::Drop;
 use clone::Clone;
 use kinds::Owned;
+use kinds::Sized;
 
 /// An atomically reference counted pointer.
 ///
@@ -31,7 +32,7 @@ struct AtomicRcBoxData<T> {
     data: Option<T>,
 }
 
-impl<T: Owned> UnsafeAtomicRcBox<T> {
+impl<T: Owned + Sized> UnsafeAtomicRcBox<T> {
     pub fn new(data: T) -> UnsafeAtomicRcBox<T> {
         unsafe {
             let data = ~AtomicRcBoxData { count: 1, data: Some(data) };
@@ -61,7 +62,7 @@ impl<T: Owned> UnsafeAtomicRcBox<T> {
     }
 }
 
-impl<T: Owned> Clone for UnsafeAtomicRcBox<T> {
+impl<T: Owned + Sized> Clone for UnsafeAtomicRcBox<T> {
     fn clone(&self) -> UnsafeAtomicRcBox<T> {
         unsafe {
             let mut data: ~AtomicRcBoxData<T> = cast::transmute(self.data);
@@ -119,7 +120,7 @@ fn LittleLock() -> LittleLock {
 
 impl LittleLock {
     #[inline(always)]
-    pub unsafe fn lock<T>(&self, f: &fn() -> T) -> T {
+    pub unsafe fn lock<T: Sized>(&self, f: &fn() -> T) -> T {
         do atomically {
             rust_lock_little_lock(self.l);
             do (|| {
@@ -144,7 +145,7 @@ pub struct Exclusive<T> {
     x: UnsafeAtomicRcBox<ExData<T>>
 }
 
-pub fn exclusive<T:Owned>(user_data: T) -> Exclusive<T> {
+pub fn exclusive<T:Sized+Owned>(user_data: T) -> Exclusive<T> {
     let data = ExData {
         lock: LittleLock(),
         failed: false,
@@ -155,14 +156,14 @@ pub fn exclusive<T:Owned>(user_data: T) -> Exclusive<T> {
     }
 }
 
-impl<T:Owned> Clone for Exclusive<T> {
+impl<T:Sized+Owned> Clone for Exclusive<T> {
     // Duplicate an exclusive ARC, as std::arc::clone.
     fn clone(&self) -> Exclusive<T> {
         Exclusive { x: self.x.clone() }
     }
 }
 
-impl<T:Owned> Exclusive<T> {
+impl<T:Sized+Owned> Exclusive<T> {
     // Exactly like std::arc::mutex_arc,access(), but with the little_lock
     // instead of a proper mutex. Same reason for being unsafe.
     //
@@ -170,7 +171,7 @@ impl<T:Owned> Exclusive<T> {
     // accessing the provided condition variable) are prohibited while inside
     // the exclusive. Supporting that is a work in progress.
     #[inline(always)]
-    pub unsafe fn with<U>(&self, f: &fn(x: &mut T) -> U) -> U {
+    pub unsafe fn with<U: Sized>(&self, f: &fn(x: &mut T) -> U) -> U {
         let rec = self.x.get();
         do (*rec).lock.lock {
             if (*rec).failed {
@@ -184,7 +185,7 @@ impl<T:Owned> Exclusive<T> {
     }
 
     #[inline(always)]
-    pub unsafe fn with_imm<U>(&self, f: &fn(x: &T) -> U) -> U {
+    pub unsafe fn with_imm<U: Sized>(&self, f: &fn(x: &T) -> U) -> U {
         do self.with |x| {
             f(cast::transmute_immut(x))
         }

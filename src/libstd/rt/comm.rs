@@ -26,6 +26,7 @@ use unstable::intrinsics::{atomic_xchg, atomic_load};
 use util::Void;
 use comm::{GenericChan, GenericSmartChan, GenericPort, Peekable};
 use cell::Cell;
+use kinds::Sized;
 
 /// A combined refcount / ~Task pointer.
 ///
@@ -68,7 +69,7 @@ pub struct PortOneHack<T> {
     suppress_finalize: bool
 }
 
-pub fn oneshot<T: Owned>() -> (PortOne<T>, ChanOne<T>) {
+pub fn oneshot<T: Sized+Owned>() -> (PortOne<T>, ChanOne<T>) {
     let packet: ~Packet<T> = ~Packet {
         state: STATE_BOTH,
         payload: None
@@ -92,7 +93,7 @@ pub fn oneshot<T: Owned>() -> (PortOne<T>, ChanOne<T>) {
     }
 }
 
-impl<T> ChanOne<T> {
+impl<T:Sized> ChanOne<T> {
 
     pub fn send(self, val: T) {
         self.try_send(val);
@@ -140,7 +141,7 @@ impl<T> ChanOne<T> {
 }
 
 
-impl<T> PortOne<T> {
+impl<T:Sized> PortOne<T> {
     pub fn recv(self) -> T {
         match self.try_recv() {
             Some(val) => val,
@@ -307,20 +308,20 @@ pub struct Port<T> {
     next: Cell<PortOne<StreamPayload<T>>>
 }
 
-pub fn stream<T: Owned>() -> (Port<T>, Chan<T>) {
+pub fn stream<T: Sized+Owned>() -> (Port<T>, Chan<T>) {
     let (pone, cone) = oneshot();
     let port = Port { next: Cell::new(pone) };
     let chan = Chan { next: Cell::new(cone) };
     return (port, chan);
 }
 
-impl<T: Owned> GenericChan<T> for Chan<T> {
+impl<T: Sized+Owned> GenericChan<T> for Chan<T> {
     fn send(&self, val: T) {
         self.try_send(val);
     }
 }
 
-impl<T: Owned> GenericSmartChan<T> for Chan<T> {
+impl<T: Sized+Owned> GenericSmartChan<T> for Chan<T> {
     fn try_send(&self, val: T) -> bool {
         let (next_pone, next_cone) = oneshot();
         let cone = self.next.take();
@@ -329,7 +330,7 @@ impl<T: Owned> GenericSmartChan<T> for Chan<T> {
     }
 }
 
-impl<T> GenericPort<T> for Port<T> {
+impl<T:Sized> GenericPort<T> for Port<T> {
     fn recv(&self) -> T {
         match self.try_recv() {
             Some(val) => val,

@@ -44,6 +44,7 @@ let unwrapped_msg = match msg {
 use cmp::{Eq,Ord};
 use ops::Add;
 use kinds::Copy;
+use kinds::Sized;
 use util;
 use num::Zero;
 use old_iter::{BaseIter, MutableIter, ExtendedIter};
@@ -88,7 +89,7 @@ impl<T:Ord> Ord for Option<T> {
     }
 }
 
-impl<T: Copy + Add<T,T>> Add<Option<T>, Option<T>> for Option<T> {
+impl<T: Copy + Sized + Add<T,T>> Add<Option<T>, Option<T>> for Option<T> {
     #[inline(always)]
     fn add(&self, other: &Option<T>) -> Option<T> {
         match (*self, *other) {
@@ -130,16 +131,16 @@ impl<A> ExtendedIter<A> for Option<A> {
     pub fn any(&self, blk: &fn(&A) -> bool) -> bool {
         old_iter::any(self, blk)
     }
-    pub fn foldl<B>(&self, b0: B, blk: &fn(&B, &A) -> B) -> B {
+    pub fn foldl<B:Sized>(&self, b0: B, blk: &fn(&B, &A) -> B) -> B {
         old_iter::foldl(self, b0, blk)
     }
     pub fn position(&self, f: &fn(&A) -> bool) -> Option<uint> {
         old_iter::position(self, f)
     }
-    fn map_to_vec<B>(&self, op: &fn(&A) -> B) -> ~[B] {
+    fn map_to_vec<B:Sized>(&self, op: &fn(&A) -> B) -> ~[B] {
         old_iter::map_to_vec(self, op)
     }
-    fn flat_map_to_vec<B,IB:BaseIter<B>>(&self, op: &fn(&A) -> IB)
+    fn flat_map_to_vec<B:Sized,IB:Sized+BaseIter<B>>(&self, op: &fn(&A) -> IB)
         -> ~[B] {
         old_iter::flat_map_to_vec(self, op)
     }
@@ -154,11 +155,13 @@ impl<T> Option<T> {
     /// Returns true if the option contains some value
     #[inline(always)]
     pub fn is_some(&const self) -> bool { !self.is_none() }
+}
 
+impl<T: Sized> Option<T> {
     /// Update an optional value by optionally running its content through a
     /// function that returns an option.
     #[inline(always)]
-    pub fn chain<U>(self, f: &fn(t: T) -> Option<U>) -> Option<U> {
+    pub fn chain<U:Sized>(self, f: &fn(t: T) -> Option<U>) -> Option<U> {
         match self {
             Some(t) => f(t),
             None => None
@@ -177,7 +180,7 @@ impl<T> Option<T> {
     /// Update an optional value by optionally running its content by reference
     /// through a function that returns an option.
     #[inline(always)]
-    pub fn chain_ref<'a, U>(&'a self, f: &fn(x: &'a T) -> Option<U>)
+    pub fn chain_ref<'a, U:Sized>(&'a self, f: &fn(x: &'a T) -> Option<U>)
                             -> Option<U> {
         match *self {
             Some(ref x) => f(x),
@@ -187,27 +190,27 @@ impl<T> Option<T> {
 
     /// Maps a `some` value from one type to another by reference
     #[inline(always)]
-    pub fn map<'a, U>(&self, f: &fn(&'a T) -> U) -> Option<U> {
+    pub fn map<'a, U:Sized>(&self, f: &fn(&'a T) -> U) -> Option<U> {
         match *self { Some(ref x) => Some(f(x)), None => None }
     }
 
     /// As `map`, but consumes the option and gives `f` ownership to avoid
     /// copying.
     #[inline(always)]
-    pub fn map_consume<U>(self, f: &fn(v: T) -> U) -> Option<U> {
+    pub fn map_consume<U:Sized>(self, f: &fn(v: T) -> U) -> Option<U> {
         match self { None => None, Some(v) => Some(f(v)) }
     }
 
     /// Applies a function to the contained value or returns a default
     #[inline(always)]
-    pub fn map_default<'a, U>(&'a self, def: U, f: &fn(&'a T) -> U) -> U {
+    pub fn map_default<'a, U:Sized>(&'a self, def: U, f: &fn(&'a T) -> U) -> U {
         match *self { None => def, Some(ref t) => f(t) }
     }
 
     /// As `map_default`, but consumes the option and gives `f`
     /// ownership to avoid copying.
     #[inline(always)]
-    pub fn map_consume_default<U>(self, def: U, f: &fn(v: T) -> U) -> U {
+    pub fn map_consume_default<U:Sized>(self, def: U, f: &fn(v: T) -> U) -> U {
         match self { None => def, Some(v) => f(v) }
     }
 
@@ -326,7 +329,7 @@ impl<T> Option<T> {
     }
 }
 
-impl<T:Copy> Option<T> {
+impl<T:Copy+Sized> Option<T> {
     /**
     Gets the value out of an option
 
@@ -365,7 +368,7 @@ impl<T:Copy> Option<T> {
     }
 }
 
-impl<T:Copy + Zero> Option<T> {
+impl<T:Copy + Zero + Sized> Option<T> {
     /// Returns the contained value or zero (for this type)
     #[inline(always)]
     pub fn get_or_zero(self) -> T {

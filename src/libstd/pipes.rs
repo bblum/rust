@@ -99,6 +99,7 @@ use task;
 use vec;
 use vec::OwnedVector;
 use util::replace;
+use kinds::Sized;
 
 static SPIN_COUNT: uint = 0;
 
@@ -203,13 +204,13 @@ impl<T:Owned> HasBuffer for Packet<T> {
     }
 }
 
-pub fn mk_packet<T:Owned>() -> Packet<T> {
+pub fn mk_packet<T:Owned+Sized>() -> Packet<T> {
     Packet {
         header: PacketHeader(),
         payload: None,
     }
 }
-fn unibuffer<T>() -> ~Buffer<Packet<T>> {
+fn unibuffer<T:Sized>() -> ~Buffer<Packet<T>> {
     let mut b = ~Buffer {
         header: BufferHeader(),
         data: Packet {
@@ -224,7 +225,7 @@ fn unibuffer<T>() -> ~Buffer<Packet<T>> {
     b
 }
 
-pub fn packet<T>() -> *mut Packet<T> {
+pub fn packet<T:Sized>() -> *mut Packet<T> {
     let mut b = unibuffer();
     let p = ptr::to_mut_unsafe_ptr(&mut b.data);
     // We'll take over memory management from here.
@@ -349,7 +350,7 @@ fn BufferResource<T>(mut b: ~Buffer<T>) -> BufferResource<T> {
     }
 }
 
-pub fn send<T,Tbuffer>(mut p: SendPacketBuffered<T,Tbuffer>,
+pub fn send<T:Sized,Tbuffer>(mut p: SendPacketBuffered<T,Tbuffer>,
                        payload: T)
                        -> bool {
     let header = p.header();
@@ -397,7 +398,7 @@ pub fn send<T,Tbuffer>(mut p: SendPacketBuffered<T,Tbuffer>,
 Fails if the sender closes the connection.
 
 */
-pub fn recv<T:Owned,Tbuffer:Owned>(
+pub fn recv<T:Owned+Sized,Tbuffer:Owned+Sized>(
     p: RecvPacketBuffered<T, Tbuffer>) -> T {
     try_recv(p).expect("connection closed")
 }
@@ -408,7 +409,7 @@ Returns `None` if the sender has closed the connection without sending
 a message, or `Some(T)` if a message was received.
 
 */
-pub fn try_recv<T:Owned,Tbuffer:Owned>(mut p: RecvPacketBuffered<T, Tbuffer>)
+pub fn try_recv<T:Owned+Sized,Tbuffer:Owned+Sized>(mut p: RecvPacketBuffered<T, Tbuffer>)
                                        -> Option<T> {
     let p_ = p.unwrap();
     let p = unsafe { &mut *p_ };
@@ -428,7 +429,7 @@ pub fn try_recv<T:Owned,Tbuffer:Owned>(mut p: RecvPacketBuffered<T, Tbuffer>)
     }
 }
 
-fn try_recv_<T:Owned>(p: &mut Packet<T>) -> Option<T> {
+fn try_recv_<T:Owned+Sized>(p: &mut Packet<T>) -> Option<T> {
     // optimistic path
     match p.header.state {
       Full => {
@@ -589,7 +590,7 @@ that vector. The index points to an endpoint that has either been
 closed by the sender or has a message waiting to be received.
 
 */
-pub fn wait_many<T: Selectable>(pkts: &mut [T]) -> uint {
+pub fn wait_many<T: Sized+Selectable>(pkts: &mut [T]) -> uint {
     let this = unsafe {
         rustrt::rust_get_task()
     };
@@ -775,7 +776,7 @@ pub fn RecvPacketBuffered<T,Tbuffer>(p: *mut Packet<T>)
     }
 }
 
-pub fn entangle<T>() -> (RecvPacket<T>, SendPacket<T>) {
+pub fn entangle<T:Sized>() -> (RecvPacket<T>, SendPacket<T>) {
     let p = packet();
     (RecvPacket(p), SendPacket(p))
 }
@@ -808,7 +809,7 @@ Sometimes messages will be available on both endpoints at once. In
 this case, `select2` may return either `left` or `right`.
 
 */
-pub fn select2<A:Owned,Ab:Owned,B:Owned,Bb:Owned>(
+pub fn select2<A:Owned+Sized,Ab:Owned+Sized,B:Owned+Sized,Bb:Owned+Sized>(
     mut a: RecvPacketBuffered<A, Ab>,
     mut b: RecvPacketBuffered<B, Bb>)
     -> Either<(Option<A>, RecvPacketBuffered<B, Bb>),
@@ -831,7 +832,7 @@ impl Selectable for *mut PacketHeader {
 }
 
 /// Returns the index of an endpoint that is ready to receive.
-pub fn selecti<T:Selectable>(endpoints: &mut [T]) -> uint {
+pub fn selecti<T:Sized+Selectable>(endpoints: &mut [T]) -> uint {
     wait_many(endpoints)
 }
 
@@ -848,7 +849,7 @@ pub fn select2i<A:Selectable,B:Selectable>(a: &mut A, b: &mut B)
 
 /// Waits on a set of endpoints. Returns a message, its index, and a
 /// list of the remaining endpoints.
-pub fn select<T:Owned,Tb:Owned>(mut endpoints: ~[RecvPacketBuffered<T, Tb>])
+pub fn select<T:Owned+Sized,Tb:Owned+Sized>(mut endpoints: ~[RecvPacketBuffered<T, Tb>])
                                 -> (uint,
                                     Option<T>,
                                     ~[RecvPacketBuffered<T, Tb>]) {
@@ -866,11 +867,12 @@ pub fn select<T:Owned,Tb:Owned>(mut endpoints: ~[RecvPacketBuffered<T, Tb>])
 
 pub mod rt {
     use option::{None, Option, Some};
+    use kinds::Sized;
 
     // These are used to hide the option constructors from the
     // compiler because their names are changing
-    pub fn make_some<T>(val: T) -> Option<T> { Some(val) }
-    pub fn make_none<T>() -> Option<T> { None }
+    pub fn make_some<T:Sized>(val: T) -> Option<T> { Some(val) }
+    pub fn make_none<T:Sized>() -> Option<T> { None }
 }
 
 #[cfg(test)]

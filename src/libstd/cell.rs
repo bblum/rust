@@ -15,6 +15,7 @@
 use cast::transmute_mut;
 use prelude::*;
 use util::replace;
+use kinds::Sized;
 
 /*
 A dynamic, mutable location.
@@ -29,7 +30,7 @@ pub struct Cell<T> {
     priv value: Option<T>
 }
 
-impl<T> Cell<T> {
+impl<T: Sized> Cell<T> {
     /// Creates a new full cell with the given value.
     pub fn new(value: T) -> Cell<T> {
         Cell { value: Some(value) }
@@ -65,7 +66,7 @@ impl<T> Cell<T> {
     }
 
     /// Calls a closure with a reference to the value.
-    pub fn with_ref<R>(&self, op: &fn(v: &T) -> R) -> R {
+    pub fn with_ref<R:Sized>(&self, op: &fn(v: &T) -> R) -> R {
         let v = self.take();
         let r = op(&v);
         self.put_back(v);
@@ -73,7 +74,7 @@ impl<T> Cell<T> {
     }
 
     /// Calls a closure with a mutable reference to the value.
-    pub fn with_mut_ref<R>(&self, op: &fn(v: &mut T) -> R) -> R {
+    pub fn with_mut_ref<R:Sized>(&self, op: &fn(v: &mut T) -> R) -> R {
         let mut v = self.take();
         let r = op(&mut v);
         self.put_back(v);

@@ -13,6 +13,7 @@
 use cast::transmute;
 use container::Container;
 use kinds::Copy;
+use kinds::Sized;
 use old_iter;
 use old_iter::BaseIter;
 use option::Option;
@@ -59,7 +60,7 @@ pub fn capacity<T>(v: @[T]) -> uint {
  *             onto the vector being constructed.
  */
 #[inline(always)]
-pub fn build_sized<A>(size: uint, builder: &fn(push: &fn(v: A))) -> @[A] {
+pub fn build_sized<A:Sized>(size: uint, builder: &fn(push: &fn(v: A))) -> @[A] {
     let mut vec: @[A] = @[];
     unsafe { raw::reserve(&mut vec, size); }
     builder(|x| unsafe { raw::push(&mut vec, x) });
@@ -77,7 +78,7 @@ pub fn build_sized<A>(size: uint, builder: &fn(push: &fn(v: A))) -> @[A] {
  *             onto the vector being constructed.
  */
 #[inline(always)]
-pub fn build<A>(builder: &fn(push: &fn(v: A))) -> @[A] {
+pub fn build<A:Sized>(builder: &fn(push: &fn(v: A))) -> @[A] {
     build_sized(4, builder)
 }
 
@@ -94,7 +95,7 @@ pub fn build<A>(builder: &fn(push: &fn(v: A))) -> @[A] {
  *             onto the vector being constructed.
  */
 #[inline(always)]
-pub fn build_sized_opt<A>(size: Option<uint>,
+pub fn build_sized_opt<A:Sized>(size: Option<uint>,
                           builder: &fn(push: &fn(v: A)))
                        -> @[A] {
     build_sized(size.get_or_default(4), builder)
@@ -105,7 +106,7 @@ pub fn build_sized_opt<A>(size: Option<uint>,
 /// Iterates over the `rhs` vector, copying each element and appending it to the
 /// `lhs`. Afterwards, the `lhs` is then returned for use again.
 #[inline(always)]
-pub fn append<T:Copy>(lhs: @[T], rhs: &const [T]) -> @[T] {
+pub fn append<T:Copy+Sized>(lhs: @[T], rhs: &const [T]) -> @[T] {
     do build_sized(lhs.len() + rhs.len()) |push| {
         for lhs.each |x| { push(*x); }
         for uint::range(0, rhs.len()) |i| { push(rhs[i]); }
@@ -114,7 +115,7 @@ pub fn append<T:Copy>(lhs: @[T], rhs: &const [T]) -> @[T] {
 
 
 /// Apply a function to each element of a vector and return the results
-pub fn map<T, U>(v: &[T], f: &fn(x: &T) -> U) -> @[U] {
+pub fn map<T:Sized, U:Sized>(v: &[T], f: &fn(x: &T) -> U) -> @[U] {
     do build_sized(v.len()) |push| {
         for v.each |elem| {
             push(f(elem));
@@ -128,7 +129,7 @@ pub fn map<T, U>(v: &[T], f: &fn(x: &T) -> U) -> @[U] {
  * Creates an immutable vector of size `n_elts` and initializes the elements
  * to the value returned by the function `op`.
  */
-pub fn from_fn<T>(n_elts: uint, op: old_iter::InitOp<T>) -> @[T] {
+pub fn from_fn<T:Sized>(n_elts: uint, op: old_iter::InitOp<T>) -> @[T] {
     do build_sized(n_elts) |push| {
         let mut i: uint = 0u;
         while i < n_elts { push(op(i)); i += 1u; }
@@ -141,7 +142,7 @@ pub fn from_fn<T>(n_elts: uint, op: old_iter::InitOp<T>) -> @[T] {
  * Creates an immutable vector of size `n_elts` and initializes the elements
  * to the value `t`.
  */
-pub fn from_elem<T:Copy>(n_elts: uint, t: T) -> @[T] {
+pub fn from_elem<T:Copy+Sized>(n_elts: uint, t: T) -> @[T] {
     do build_sized(n_elts) |push| {
         let mut i: uint = 0u;
         while i < n_elts { push(copy t); i += 1u; }
@@ -152,7 +153,7 @@ pub fn from_elem<T:Copy>(n_elts: uint, t: T) -> @[T] {
  * Creates and initializes an immutable managed vector by moving all the
  * elements from an owned vector.
  */
-pub fn to_managed_consume<T>(v: ~[T]) -> @[T] {
+pub fn to_managed_consume<T:Sized>(v: ~[T]) -> @[T] {
     let mut av = @[];
     unsafe {
         raw::reserve(&mut av, v.len());
@@ -167,7 +168,7 @@ pub fn to_managed_consume<T>(v: ~[T]) -> @[T] {
  * Creates and initializes an immutable managed vector by copying all the
  * elements of a slice.
  */
-pub fn to_managed<T:Copy>(v: &[T]) -> @[T] {
+pub fn to_managed<T:Copy+Sized>(v: &[T]) -> @[T] {
     from_fn(v.len(), |i| v[i])
 }
 
@@ -175,9 +176,10 @@ pub fn to_managed<T:Copy>(v: &[T]) -> @[T] {
 pub mod traits {
     use at_vec::append;
     use kinds::Copy;
+    use kinds::Sized;
     use ops::Add;
 
-    impl<'self,T:Copy> Add<&'self const [T],@[T]> for @[T] {
+    impl<'self,T:Sized+Copy> Add<&'self const [T],@[T]> for @[T] {
         #[inline(always)]
         fn add(&self, rhs: & &'self const [T]) -> @[T] {
             append(*self, (*rhs))
@@ -197,6 +199,7 @@ pub mod raw {
     use uint;
     use unstable::intrinsics::{move_val_init};
     use vec;
+    use kinds::Sized;
 
     pub type VecRepr = vec::raw::VecRepr;
     pub type SliceRepr = vec::raw::SliceRepr;
@@ -209,7 +212,7 @@ pub mod raw {
      * the vector is actually the specified size.
      */
     #[inline(always)]
-    pub unsafe fn set_len<T>(v: @[T], new_len: uint) {
+    pub unsafe fn set_len<T:Sized>(v: @[T], new_len: uint) {
         let repr: **mut VecRepr = transmute(&v);
         (**repr).unboxed.fill = new_len * sys::size_of::<T>();
     }
@@ -218,7 +221,7 @@ pub mod raw {
      * Pushes a new value onto this vector.
      */
     #[inline(always)]
-    pub unsafe fn push<T>(v: &mut @[T], initval: T) {
+    pub unsafe fn push<T:Sized>(v: &mut @[T], initval: T) {
         let repr: **VecRepr = transmute_copy(&v);
         let fill = (**repr).unboxed.fill;
         if (**repr).unboxed.alloc > fill {
@@ -229,7 +232,7 @@ pub mod raw {
     }
 
     #[inline(always)] // really pretty please
-    unsafe fn push_fast<T>(v: &mut @[T], initval: T) {
+    unsafe fn push_fast<T:Sized>(v: &mut @[T], initval: T) {
         let repr: **mut VecRepr = ::cast::transmute(v);
         let fill = (**repr).unboxed.fill;
         (**repr).unboxed.fill += sys::size_of::<T>();
@@ -238,7 +241,7 @@ pub mod raw {
         move_val_init(&mut(*p), initval);
     }
 
-    unsafe fn push_slow<T>(v: &mut @[T], initval: T) {
+    unsafe fn push_slow<T:Sized>(v: &mut @[T], initval: T) {
         reserve_at_least(&mut *v, v.len() + 1u);
         push_fast(v, initval);
     }
@@ -254,7 +257,7 @@ pub mod raw {
      * * v - A vector
      * * n - The number of elements to reserve space for
      */
-    pub unsafe fn reserve<T>(v: &mut @[T], n: uint) {
+    pub unsafe fn reserve<T:Sized>(v: &mut @[T], n: uint) {
         // Only make the (slow) call into the runtime if we have to
         if capacity(*v) < n {
             let ptr: **VecRepr = transmute(v);
@@ -278,7 +281,7 @@ pub mod raw {
      * * v - A vector
      * * n - The number of elements to reserve space for
      */
-    pub unsafe fn reserve_at_least<T>(v: &mut @[T], n: uint) {
+    pub unsafe fn reserve_at_least<T:Sized>(v: &mut @[T], n: uint) {
         reserve(v, uint::next_power_of_two(n));
     }
 }

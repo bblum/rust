@@ -19,6 +19,7 @@ use io::Writer;
 use option::{None, Option, Some};
 use old_iter::BaseIter;
 use str;
+use kinds::Sized;
 
 pub type Cb<'self> = &'self fn(buf: &[u8]) -> bool;
 
@@ -190,7 +191,7 @@ impl IterBytes for int {
     }
 }
 
-impl<'self,A:IterBytes> IterBytes for &'self [A] {
+impl<'self,A:Sized+IterBytes> IterBytes for &'self [A] {
     #[inline(always)]
     fn iter_bytes(&self, lsb0: bool, f: Cb) -> bool {
         self.each(|elt| elt.iter_bytes(lsb0, |b| f(b)))
@@ -222,14 +223,14 @@ fn borrow<'x,A>(a: &'x [A]) -> &'x [A] {
     a
 }
 
-impl<A:IterBytes> IterBytes for ~[A] {
+impl<A:Sized+IterBytes> IterBytes for ~[A] {
     #[inline(always)]
     fn iter_bytes(&self, lsb0: bool, f: Cb) -> bool {
         borrow(*self).iter_bytes(lsb0, f)
     }
 }
 
-impl<A:IterBytes> IterBytes for @[A] {
+impl<A:Sized+IterBytes> IterBytes for @[A] {
     #[inline(always)]
     fn iter_bytes(&self, lsb0: bool, f: Cb) -> bool {
         borrow(*self).iter_bytes(lsb0, f)

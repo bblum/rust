@@ -19,6 +19,7 @@
 use option::*;
 use super::{Reader, Writer, Listener};
 use super::{standard_error, PreviousIoError, io_error, read_error, IoError};
+use kinds::Sized;
 
 fn prev_io_error() -> IoError {
     standard_error(PreviousIoError)
@@ -62,7 +63,7 @@ impl<R: Reader> Reader for Option<R> {
     }
 }
 
-impl<L: Listener<S>, S> Listener<S> for Option<L> {
+impl<L: Listener<S>, S: Sized> Listener<S> for Option<L> {
     fn accept(&mut self) -> Option<S> {
         match *self {
             Some(ref mut listener) => listener.accept(),

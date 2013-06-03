@@ -15,13 +15,14 @@ use cell::Cell;
 use option::*;
 use unstable::sync::{Exclusive, exclusive};
 use clone::Clone;
+use kinds::Sized;
 
 pub struct MessageQueue<T> {
     // XXX: Another mystery bug fixed by boxing this lock
     priv queue: ~Exclusive<~[T]>
 }
 
-impl<T: Owned> MessageQueue<T> {
+impl<T: Sized+Owned> MessageQueue<T> {
     pub fn new() -> MessageQueue<T> {
         MessageQueue {
             queue: ~exclusive(~[])

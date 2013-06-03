@@ -21,6 +21,7 @@ use container::Map;
 use hash::Hash;
 use cmp::Eq;
 use old_iter::BaseIter;
+use kinds::Sized;
 
 /// A generic trait for converting a value to a string
 pub trait ToStr {
@@ -50,7 +51,7 @@ impl<A:ToStr> ToStr for (A,) {
     }
 }
 
-impl<A:ToStr+Hash+Eq, B:ToStr+Hash+Eq> ToStr for HashMap<A, B> {
+impl<A:ToStr+Hash+Eq+Sized, B:ToStr+Hash+Eq+Sized> ToStr for HashMap<A, B> {
     #[inline(always)]
     fn to_str(&self) -> ~str {
         let mut (acc, first) = (~"{", true);
@@ -70,7 +71,7 @@ impl<A:ToStr+Hash+Eq, B:ToStr+Hash+Eq> ToStr for HashMap<A, B> {
     }
 }
 
-impl<A:ToStr+Hash+Eq> ToStr for HashSet<A> {
+impl<A:ToStr+Hash+Eq+Sized> ToStr for HashSet<A> {
     #[inline(always)]
     fn to_str(&self) -> ~str {
         let mut (acc, first) = (~"{", true);
@@ -118,7 +119,7 @@ impl<A:ToStr,B:ToStr,C:ToStr> ToStr for (A, B, C) {
     }
 }
 
-impl<'self,A:ToStr> ToStr for &'self [A] {
+impl<'self,A:ToStr+Sized> ToStr for &'self [A] {
     #[inline(always)]
     fn to_str(&self) -> ~str {
         let mut (acc, first) = (~"[", true);
@@ -136,7 +137,7 @@ impl<'self,A:ToStr> ToStr for &'self [A] {
     }
 }
 
-impl<A:ToStr> ToStr for ~[A] {
+impl<A:ToStr+Sized> ToStr for ~[A] {
     #[inline(always)]
     fn to_str(&self) -> ~str {
         let mut (acc, first) = (~"[", true);
@@ -154,7 +155,7 @@ impl<A:ToStr> ToStr for ~[A] {
     }
 }
 
-impl<A:ToStr> ToStr for @[A] {
+impl<A:ToStr+Sized> ToStr for @[A] {
     #[inline(always)]
     fn to_str(&self) -> ~str {
         let mut (acc, first) = (~"[", true);
