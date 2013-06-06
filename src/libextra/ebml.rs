@@ -243,7 +243,7 @@ pub mod reader {
         vec::slice::<u8>(*d.data, d.start, d.end).to_vec()
     }
 
-    pub fn with_doc_data<T>(d: Doc, f: &fn(x: &[u8]) -> T) -> T {
+    pub fn with_doc_data<T: Sized>(d: Doc, f: &fn(x: &[u8]) -> T) -> T {
         f(vec::slice(*d.data, d.start, d.end))
     }
 
@@ -323,7 +323,7 @@ pub mod reader {
             r_doc
         }
 
-        fn push_doc<T>(&mut self, exp_tag: EbmlEncoderTag,
+        fn push_doc<T: Sized>(&mut self, exp_tag: EbmlEncoderTag,
                        f: &fn(&mut Decoder) -> T) -> T {
             let d = self.next_doc(exp_tag);
             let old_parent = self.parent;
@@ -344,8 +344,8 @@ pub mod reader {
     }
 
     impl Decoder {
-        pub fn read_opaque<R>(&mut self, op: &fn(&mut Decoder, Doc) -> R)
-                              -> R {
+        pub fn read_opaque<R: Sized>(&mut self, op: &fn(&mut Decoder, Doc) -> R)
+                                     -> R {
             let doc = self.next_doc(EsOpaque);
 
             let (old_parent, old_pos) = (self.parent, self.pos);
@@ -418,10 +418,10 @@ pub mod reader {
         fn read_str(&mut self) -> ~str { doc_as_str(self.next_doc(EsStr)) }
 
         // Compound types:
-        fn read_enum<T>(&mut self,
-                        name: &str,
-                        f: &fn(&mut Decoder) -> T)
-                        -> T {
+        fn read_enum<T: Sized>(&mut self,
+                               name: &str,
+                               f: &fn(&mut Decoder) -> T)
+                               -> T {
             debug!("read_enum(%s)", name);
             self._check_label(name);
 
@@ -438,10 +438,10 @@ pub mod reader {
             result
         }
 
-        fn read_enum_variant<T>(&mut self,
-                                _: &[&str],
-                                f: &fn(&mut Decoder, uint) -> T)
-                                -> T {
+        fn read_enum_variant<T: Sized>(&mut self,
+                                       _: &[&str],
+                                       f: &fn(&mut Decoder, uint) -> T)
+                                       -> T {
             debug!("read_enum_variant()");
             let idx = self._next_uint(EsEnumVid);
             debug!("  idx=%u", idx);
@@ -459,17 +459,17 @@ pub mod reader {
             result
         }
 
-        fn read_enum_variant_arg<T>(&mut self,
-                                    idx: uint,
-                                    f: &fn(&mut Decoder) -> T) -> T {
+        fn read_enum_variant_arg<T: Sized>(&mut self,
+                                           idx: uint,
+                                           f: &fn(&mut Decoder) -> T) -> T {
             debug!("read_enum_variant_arg(idx=%u)", idx);
             f(self)
         }
 
-        fn read_enum_struct_variant<T>(&mut self,
-                                       _: &[&str],
-                                       f: &fn(&mut Decoder, uint) -> T)
-                                       -> T {
+        fn read_enum_struct_variant<T: Sized>(&mut self,
+                                              _: &[&str],
+                                              f: &fn(&mut Decoder, uint) -> T)
+                                              -> T {
             debug!("read_enum_struct_variant()");
             let idx = self._next_uint(EsEnumVid);
             debug!("  idx=%u", idx);
@@ -487,62 +487,62 @@ pub mod reader {
             result
         }
 
-        fn read_enum_struct_variant_field<T>(&mut self,
-                                             name: &str,
-                                             idx: uint,
-                                             f: &fn(&mut Decoder) -> T)
-                                             -> T {
+        fn read_enum_struct_variant_field<T: Sized>(&mut self,
+                                                    name: &str,
+                                                    idx: uint,
+                                                    f: &fn(&mut Decoder) -> T)
+                                                    -> T {
             debug!("read_enum_struct_variant_arg(name=%?, idx=%u)", name, idx);
             f(self)
         }
 
-        fn read_struct<T>(&mut self,
-                          name: &str,
-                          _: uint,
-                          f: &fn(&mut Decoder) -> T)
-                          -> T {
+        fn read_struct<T: Sized>(&mut self,
+                                 name: &str,
+                                 _: uint,
+                                 f: &fn(&mut Decoder) -> T)
+                                 -> T {
             debug!("read_struct(name=%s)", name);
             f(self)
         }
 
-        fn read_struct_field<T>(&mut self,
-                                name: &str,
-                                idx: uint,
-                                f: &fn(&mut Decoder) -> T)
-                                -> T {
+        fn read_struct_field<T: Sized>(&mut self,
+                                       name: &str,
+                                       idx: uint,
+                                       f: &fn(&mut Decoder) -> T)
+                                       -> T {
             debug!("read_struct_field(name=%?, idx=%u)", name, idx);
             self._check_label(name);
             f(self)
         }
 
-        fn read_tuple<T>(&mut self, f: &fn(&mut Decoder, uint) -> T) -> T {
+        fn read_tuple<T: Sized>(&mut self, f: &fn(&mut Decoder, uint) -> T) -> T {
             debug!("read_tuple()");
             self.read_seq(f)
         }
 
-        fn read_tuple_arg<T>(&mut self, idx: uint, f: &fn(&mut Decoder) -> T)
-                             -> T {
+        fn read_tuple_arg<T: Sized>(&mut self, idx: uint, f: &fn(&mut Decoder) -> T)
+                                    -> T {
             debug!("read_tuple_arg(idx=%u)", idx);
             self.read_seq_elt(idx, f)
         }
 
-        fn read_tuple_struct<T>(&mut self,
-                                name: &str,
-                                f: &fn(&mut Decoder, uint) -> T)
-                                -> T {
+        fn read_tuple_struct<T: Sized>(&mut self,
+                                       name: &str,
+                                       f: &fn(&mut Decoder, uint) -> T)
+                                       -> T {
             debug!("read_tuple_struct(name=%?)", name);
             self.read_tuple(f)
         }
 
-        fn read_tuple_struct_arg<T>(&mut self,
-                                    idx: uint,
-                                    f: &fn(&mut Decoder) -> T)
-                                    -> T {
+        fn read_tuple_struct_arg<T: Sized>(&mut self,
+                                           idx: uint,
+                                           f: &fn(&mut Decoder) -> T)
+                                           -> T {
             debug!("read_tuple_struct_arg(idx=%u)", idx);
             self.read_tuple_arg(idx, f)
         }
 
-        fn read_option<T>(&mut self, f: &fn(&mut Decoder, bool) -> T) -> T {
+        fn read_option<T: Sized>(&mut self, f: &fn(&mut Decoder, bool) -> T) -> T {
             debug!("read_option()");
             do self.read_enum("Option") |this| {
                 do this.read_enum_variant(["None", "Some"]) |this, idx| {
@@ -555,7 +555,7 @@ pub mod reader {
             }
         }
 
-        fn read_seq<T>(&mut self, f: &fn(&mut Decoder, uint) -> T) -> T {
+        fn read_seq<T: Sized>(&mut self, f: &fn(&mut Decoder, uint) -> T) -> T {
             debug!("read_seq()");
             do self.push_doc(EsVec) |d| {
                 let len = d._next_uint(EsVecLen);
@@ -564,13 +564,13 @@ pub mod reader {
             }
         }
 
-        fn read_seq_elt<T>(&mut self, idx: uint, f: &fn(&mut Decoder) -> T)
+        fn read_seq_elt<T: Sized>(&mut self, idx: uint, f: &fn(&mut Decoder) -> T)
                            -> T {
             debug!("read_seq_elt(idx=%u)", idx);
             self.push_doc(EsVecElt, f)
         }
 
-        fn read_map<T>(&mut self, f: &fn(&mut Decoder, uint) -> T) -> T {
+        fn read_map<T: Sized>(&mut self, f: &fn(&mut Decoder, uint) -> T) -> T {
             debug!("read_map()");
             do self.push_doc(EsMap) |d| {
                 let len = d._next_uint(EsMapLen);
@@ -579,18 +579,18 @@ pub mod reader {
             }
         }
 
-        fn read_map_elt_key<T>(&mut self,
-                               idx: uint,
-                               f: &fn(&mut Decoder) -> T)
-                               -> T {
+        fn read_map_elt_key<T: Sized>(&mut self,
+                                      idx: uint,
+                                      f: &fn(&mut Decoder) -> T)
+                                      -> T {
             debug!("read_map_elt_key(idx=%u)", idx);
             self.push_doc(EsMapKey, f)
         }
 
-        fn read_map_elt_val<T>(&mut self,
-                               idx: uint,
-                               f: &fn(&mut Decoder) -> T)
-                               -> T {
+        fn read_map_elt_val<T: Sized>(&mut self,
+                                      idx: uint,
+                                      f: &fn(&mut Decoder) -> T)
+                                      -> T {
             debug!("read_map_elt_val(idx=%u)", idx);
             self.push_doc(EsMapVal, f)
         }

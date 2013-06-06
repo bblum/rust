@@ -54,14 +54,14 @@ priv enum FutureState<A> {
 }
 
 /// Methods on the `future` type
-impl<A:Copy> Future<A> {
+impl<A:Sized + Copy> Future<A> {
     pub fn get(&mut self) -> A {
         //! Get the value of the future.
         *(self.get_ref())
     }
 }
 
-impl<A> Future<A> {
+impl<A: Sized> Future<A> {
     pub fn get_ref<'a>(&'a mut self) -> &'a A {
         /*!
         * Executes the future's closure and then returns a borrowed
@@ -90,7 +90,7 @@ impl<A> Future<A> {
     }
 }
 
-pub fn from_value<A>(val: A) -> Future<A> {
+pub fn from_value<A: Sized>(val: A) -> Future<A> {
     /*!
      * Create a future from a value.
      *
@@ -101,7 +101,7 @@ pub fn from_value<A>(val: A) -> Future<A> {
     Future {state: Forced(val)}
 }
 
-pub fn from_port<A:Owned>(port: PortOne<A>) -> Future<A> {
+pub fn from_port<A:Sized + Owned>(port: PortOne<A>) -> Future<A> {
     /*!
      * Create a future from a port
      *
@@ -115,7 +115,7 @@ pub fn from_port<A:Owned>(port: PortOne<A>) -> Future<A> {
     }
 }
 
-pub fn from_fn<A>(f: ~fn() -> A) -> Future<A> {
+pub fn from_fn<A: Sized>(f: ~fn() -> A) -> Future<A> {
     /*!
      * Create a future from a function.
      *
@@ -127,7 +127,7 @@ pub fn from_fn<A>(f: ~fn() -> A) -> Future<A> {
     Future {state: Pending(f)}
 }
 
-pub fn spawn<A:Owned>(blk: ~fn() -> A) -> Future<A> {
+pub fn spawn<A:Sized + Owned>(blk: ~fn() -> A) -> Future<A> {
     /*!
      * Create a future from a unique closure.
      *

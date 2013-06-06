@@ -102,7 +102,7 @@ impl<K: TotalOrd, V> Mutable for TreeMap<K, V> {
     }
 }
 
-impl<K: TotalOrd, V> Map<K, V> for TreeMap<K, V> {
+impl<K: Sized + TotalOrd, V: Sized> Map<K, V> for TreeMap<K, V> {
     /// Return true if the map contains a value for the specified key
     fn contains_key(&self, key: &K) -> bool {
         self.find(key).is_some()
@@ -250,7 +250,7 @@ pub struct TreeSet<T> {
     priv map: TreeMap<T, ()>
 }
 
-impl<T: TotalOrd> BaseIter<T> for TreeSet<T> {
+impl<T: Sized + TotalOrd> BaseIter<T> for TreeSet<T> {
     /// Visit all values in order
     #[inline(always)]
     fn each(&self, f: &fn(&T) -> bool) -> bool { self.map.each_key(f) }
@@ -300,7 +300,7 @@ impl<T: TotalOrd> Mutable for TreeSet<T> {
     fn clear(&mut self) { self.map.clear() }
 }
 
-impl<T: TotalOrd> Set<T> for TreeSet<T> {
+impl<T: Sized + TotalOrd> Set<T> for TreeSet<T> {
     /// Return true if the set contains a value
     #[inline(always)]
     fn contains(&self, value: &T) -> bool {
@@ -517,7 +517,7 @@ struct TreeNode<K, V> {
     level: uint
 }
 
-impl<K: TotalOrd, V> TreeNode<K, V> {
+impl<K: Sized + TotalOrd, V: Sized> TreeNode<K, V> {
     /// Creates a new tree node.
     #[inline(always)]
     pub fn new(key: K, value: V) -> TreeNode<K, V> {
@@ -590,8 +590,8 @@ fn find_mut<'r, K: TotalOrd, V>(node: &'r mut Option<~TreeNode<K, V>>,
     }
 }
 
-fn insert<K: TotalOrd, V>(node: &mut Option<~TreeNode<K, V>>,
-                          key: K, value: V) -> Option<V> {
+fn insert<K: Sized + TotalOrd, V: Sized>(node: &mut Option<~TreeNode<K, V>>,
+                                         key: K, value: V) -> Option<V> {
     match *node {
       Some(ref mut save) => {
         match key.cmp(&save.key) {
@@ -620,10 +620,10 @@ fn insert<K: TotalOrd, V>(node: &mut Option<~TreeNode<K, V>>,
     }
 }
 
-fn remove<K: TotalOrd, V>(node: &mut Option<~TreeNode<K, V>>,
-                          key: &K) -> Option<V> {
-    fn heir_swap<K: TotalOrd, V>(node: &mut ~TreeNode<K, V>,
-                                 child: &mut Option<~TreeNode<K, V>>) {
+fn remove<K: Sized + TotalOrd, V: Sized>(node: &mut Option<~TreeNode<K, V>>,
+                                         key: &K) -> Option<V> {
+    fn heir_swap<K: Sized + TotalOrd, V: Sized>(node: &mut ~TreeNode<K, V>,
+                                                child: &mut Option<~TreeNode<K, V>>) {
         // *could* be done without recursion, but it won't borrow check
         for child.each_mut |x| {
             if x.right.is_some() {

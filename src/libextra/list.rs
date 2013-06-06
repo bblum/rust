@@ -27,7 +27,7 @@ pub enum MutList<T> {
 }
 
 /// Create a list from a vector
-pub fn from_vec<T:Copy>(v: &[T]) -> @List<T> {
+pub fn from_vec<T: Sized + Copy>(v: &[T]) -> @List<T> {
     vec::foldr(v, @Nil::<T>, |h, t| @Cons(*h, t))
 }
 
@@ -44,7 +44,7 @@ pub fn from_vec<T:Copy>(v: &[T]) -> @List<T> {
  * * z - The initial value
  * * f - The function to apply
  */
-pub fn foldl<T:Copy,U>(z: T, ls: @List<U>, f: &fn(&T, &U) -> T) -> T {
+pub fn foldl<T: Sized + Copy,U: Sized>(z: T, ls: @List<U>, f: &fn(&T, &U) -> T) -> T {
     let mut accum: T = z;
     do iter(ls) |elt| { accum = f(&accum, elt);}
     accum
@@ -57,7 +57,7 @@ pub fn foldl<T:Copy,U>(z: T, ls: @List<U>, f: &fn(&T, &U) -> T) -> T {
  * When function `f` returns true then an option containing the element
  * is returned. If `f` matches no elements then none is returned.
  */
-pub fn find<T:Copy>(ls: @List<T>, f: &fn(&T) -> bool) -> Option<T> {
+pub fn find<T: Sized + Copy>(ls: @List<T>, f: &fn(&T) -> bool) -> Option<T> {
     let mut ls = ls;
     loop {
         ls = match *ls {
@@ -71,7 +71,7 @@ pub fn find<T:Copy>(ls: @List<T>, f: &fn(&T) -> bool) -> Option<T> {
 }
 
 /// Returns true if a list contains an element with the given value
-pub fn has<T:Copy + Eq>(ls: @List<T>, elt: T) -> bool {
+pub fn has<T: Sized + Copy + Eq>(ls: @List<T>, elt: T) -> bool {
     for each(ls) |e| {
         if *e == elt { return true; }
     }
@@ -79,7 +79,7 @@ pub fn has<T:Copy + Eq>(ls: @List<T>, elt: T) -> bool {
 }
 
 /// Returns true if the list is empty
-pub fn is_empty<T:Copy>(ls: @List<T>) -> bool {
+pub fn is_empty<T: Sized + Copy>(ls: @List<T>) -> bool {
     match *ls {
         Nil => true,
         _ => false
@@ -87,14 +87,14 @@ pub fn is_empty<T:Copy>(ls: @List<T>) -> bool {
 }
 
 /// Returns the length of a list
-pub fn len<T>(ls: @List<T>) -> uint {
+pub fn len<T: Sized>(ls: @List<T>) -> uint {
     let mut count = 0u;
     iter(ls, |_e| count += 1u);
     count
 }
 
 /// Returns all but the first element of a list
-pub fn tail<T:Copy>(ls: @List<T>) -> @List<T> {
+pub fn tail<T: Sized + Copy>(ls: @List<T>) -> @List<T> {
     match *ls {
         Cons(_, tl) => return tl,
         Nil => fail!("list empty")
@@ -102,7 +102,7 @@ pub fn tail<T:Copy>(ls: @List<T>) -> @List<T> {
 }
 
 /// Returns the first element of a list
-pub fn head<T:Copy>(ls: @List<T>) -> T {
+pub fn head<T: Sized + Copy>(ls: @List<T>) -> T {
     match *ls {
       Cons(ref hd, _) => copy *hd,
       // makes me sad
@@ -111,7 +111,7 @@ pub fn head<T:Copy>(ls: @List<T>) -> T {
 }
 
 /// Appends one list to another
-pub fn append<T:Copy>(l: @List<T>, m: @List<T>) -> @List<T> {
+pub fn append<T: Sized + Copy>(l: @List<T>, m: @List<T>) -> @List<T> {
     match *l {
       Nil => return m,
       Cons(ref x, xs) => {
@@ -124,13 +124,13 @@ pub fn append<T:Copy>(l: @List<T>, m: @List<T>) -> @List<T> {
 /*
 /// Push one element into the front of a list, returning a new list
 /// THIS VERSION DOESN'T ACTUALLY WORK
-fn push<T:Copy>(ll: &mut @list<T>, vv: T) {
+fn push<T: Sized + Copy>(ll: &mut @list<T>, vv: T) {
     ll = &mut @cons(vv, *ll)
 }
 */
 
 /// Iterate over a list
-pub fn iter<T>(l: @List<T>, f: &fn(&T)) {
+pub fn iter<T: Sized>(l: @List<T>, f: &fn(&T)) {
     let mut cur = l;
     loop {
         cur = match *cur {
@@ -144,7 +144,7 @@ pub fn iter<T>(l: @List<T>, f: &fn(&T)) {
 }
 
 /// Iterate over a list
-pub fn each<T>(l: @List<T>, f: &fn(&T) -> bool) -> bool {
+pub fn each<T: Sized>(l: @List<T>, f: &fn(&T) -> bool) -> bool {
     let mut cur = l;
     loop {
         cur = match *cur {
@@ -157,7 +157,7 @@ pub fn each<T>(l: @List<T>, f: &fn(&T) -> bool) -> bool {
     }
 }
 
-impl<T> MutList<T> {
+impl<T: Sized> MutList<T> {
     /// Iterate over a mutable list
     pub fn each(@mut self, f: &fn(&mut T) -> bool) -> bool {
         let mut cur = self;

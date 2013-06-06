@@ -26,12 +26,12 @@ type Le<'self, T> = &'self fn(v1: &T, v2: &T) -> bool;
  * Has worst case O(n log n) performance, best case O(n), but
  * is not space efficient. This is a stable sort.
  */
-pub fn merge_sort<T:Copy>(v: &[T], le: Le<T>) -> ~[T] {
+pub fn merge_sort<T: Sized + Copy>(v: &[T], le: Le<T>) -> ~[T] {
     type Slice = (uint, uint);
 
     return merge_sort_(v, (0u, len(v)), le);
 
-    fn merge_sort_<T:Copy>(v: &[T], slice: Slice, le: Le<T>)
+    fn merge_sort_<T: Sized + Copy>(v: &[T], slice: Slice, le: Le<T>)
         -> ~[T] {
         let begin = slice.first();
         let end = slice.second();
@@ -46,7 +46,7 @@ pub fn merge_sort<T:Copy>(v: &[T], le: Le<T>) -> ~[T] {
         return merge(le, merge_sort_(v, a, le), merge_sort_(v, b, le));
     }
 
-    fn merge<T:Copy>(le: Le<T>, a: &[T], b: &[T]) -> ~[T] {
+    fn merge<T: Sized + Copy>(le: Le<T>, a: &[T], b: &[T]) -> ~[T] {
         let mut rs = vec::with_capacity(len(a) + len(b));
         let a_len = len(a);
         let mut a_ix = 0;
@@ -64,7 +64,7 @@ pub fn merge_sort<T:Copy>(v: &[T], le: Le<T>) -> ~[T] {
     }
 }
 
-fn part<T>(arr: &mut [T], left: uint,
+fn part<T: Sized>(arr: &mut [T], left: uint,
            right: uint, pivot: uint, compare_func: Le<T>) -> uint {
     vec::swap(arr, pivot, right);
     let mut storage_index: uint = left;
@@ -80,7 +80,7 @@ fn part<T>(arr: &mut [T], left: uint,
     return storage_index;
 }
 
-fn qsort<T>(arr: &mut [T], left: uint,
+fn qsort<T: Sized>(arr: &mut [T], left: uint,
             right: uint, compare_func: Le<T>) {
     if right > left {
         let pivot = (left + right) / 2u;
@@ -99,12 +99,12 @@ fn qsort<T>(arr: &mut [T], left: uint,
  * Has worst case O(n^2) performance, average case O(n log n).
  * This is an unstable sort.
  */
-pub fn quick_sort<T>(arr: &mut [T], compare_func: Le<T>) {
+pub fn quick_sort<T: Sized>(arr: &mut [T], compare_func: Le<T>) {
     if len::<T>(arr) == 0u { return; }
     qsort::<T>(arr, 0u, len::<T>(arr) - 1u, compare_func);
 }
 
-fn qsort3<T:Copy + Ord + Eq>(arr: &mut [T], left: int, right: int) {
+fn qsort3<T: Sized + Copy + Ord + Eq>(arr: &mut [T], left: int, right: int) {
     if right <= left { return; }
     let v: T = arr[right];
     let mut i: int = left - 1;
@@ -161,7 +161,7 @@ fn qsort3<T:Copy + Ord + Eq>(arr: &mut [T], left: int, right: int) {
  *
  * This is an unstable sort.
  */
-pub fn quick_sort3<T:Copy + Ord + Eq>(arr: &mut [T]) {
+pub fn quick_sort3<T: Sized + Copy + Ord + Eq>(arr: &mut [T]) {
     if arr.len() <= 1 { return; }
     let len = arr.len(); // FIXME(#5074) nested calls
     qsort3(arr, 0, (len - 1) as int);
@@ -172,7 +172,7 @@ pub trait Sort {
     fn qsort(self);
 }
 
-impl<'self, T:Copy + Ord + Eq> Sort for &'self mut [T] {
+impl<'self, T: Sized + Copy + Ord + Eq> Sort for &'self mut [T] {
     fn qsort(self) { quick_sort3(self); }
 }
 
@@ -181,7 +181,7 @@ static MIN_GALLOP: uint = 7;
 static INITIAL_TMP_STORAGE: uint = 128;
 
 #[allow(missing_doc)]
-pub fn tim_sort<T:Copy + Ord>(array: &mut [T]) {
+pub fn tim_sort<T: Sized + Copy + Ord>(array: &mut [T]) {
     let size = array.len();
     if size < 2 {
         return;
@@ -225,7 +225,7 @@ pub fn tim_sort<T:Copy + Ord>(array: &mut [T]) {
     ms.merge_force_collapse(array);
 }
 
-fn binarysort<T:Copy + Ord>(array: &mut [T], start: uint) {
+fn binarysort<T: Sized + Copy + Ord>(array: &mut [T], start: uint) {
     let size = array.len();
     let mut start = start;
     assert!(start <= size);
@@ -256,7 +256,7 @@ fn binarysort<T:Copy + Ord>(array: &mut [T], start: uint) {
 }
 
 // Reverse the order of elements in a slice, in place
-fn reverse_slice<T>(v: &mut [T], start: uint, end:uint) {
+fn reverse_slice<T: Sized>(v: &mut [T], start: uint, end:uint) {
     let mut i = start;
     while i < end / 2 {
         vec::swap(v, i, end - i - 1);
@@ -275,7 +275,7 @@ fn min_run_length(n: uint) -> uint {
     return n + r;
 }
 
-fn count_run_ascending<T:Copy + Ord>(array: &mut [T]) -> uint {
+fn count_run_ascending<T: Sized + Copy + Ord>(array: &mut [T]) -> uint {
     let size = array.len();
     assert!(size > 0);
     if size == 1 { return 1; }
@@ -295,7 +295,7 @@ fn count_run_ascending<T:Copy + Ord>(array: &mut [T]) -> uint {
     return run;
 }
 
-fn gallop_left<T:Copy + Ord>(key: &T,
+fn gallop_left<T: Sized + Copy + Ord>(key: &T,
                              array: &[T],
                              hint: uint)
                           -> uint {
@@ -346,7 +346,7 @@ fn gallop_left<T:Copy + Ord>(key: &T,
     return ofs;
 }
 
-fn gallop_right<T:Copy + Ord>(key: &T,
+fn gallop_right<T: Sized + Copy + Ord>(key: &T,
                               array: &[T],
                               hint: uint)
                            -> uint {
@@ -417,7 +417,7 @@ fn MergeState<T>() -> MergeState<T> {
     }
 }
 
-impl<T:Copy + Ord> MergeState<T> {
+impl<T: Sized + Copy + Ord> MergeState<T> {
     fn push_run(&mut self, run_base: uint, run_len: uint) {
         let tmp = RunState{base: run_base, len: run_len};
         self.runs.push(tmp);
@@ -726,7 +726,7 @@ impl<T:Copy + Ord> MergeState<T> {
 }
 
 #[inline(always)]
-fn copy_vec<T:Copy>(dest: &mut [T],
+fn copy_vec<T: Sized + Copy>(dest: &mut [T],
                     s1: uint,
                     from: &[T]) {
     assert!(s1+from.len() <= dest.len());
@@ -737,7 +737,7 @@ fn copy_vec<T:Copy>(dest: &mut [T],
 }
 
 #[inline(always)]
-fn shift_vec<T:Copy>(dest: &mut [T],
+fn shift_vec<T: Sized + Copy>(dest: &mut [T],
                      s1: uint,
                      s2: uint,
                      len: uint) {

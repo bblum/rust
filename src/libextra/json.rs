@@ -536,7 +536,7 @@ impl Parser {
         self.ch
     }
 
-    fn error<T>(&self, msg: ~str) -> Result<T, Error> {
+    fn error<T: Sized>(&self, msg: ~str) -> Result<T, Error> {
         Err(Error { line: self.line, col: self.col, msg: @msg })
     }
 
@@ -926,15 +926,15 @@ impl serialize::Decoder for Decoder {
         }
     }
 
-    fn read_enum<T>(&mut self, name: &str, f: &fn(&mut Decoder) -> T) -> T {
+    fn read_enum<T: Sized>(&mut self, name: &str, f: &fn(&mut Decoder) -> T) -> T {
         debug!("read_enum(%s)", name);
         f(self)
     }
 
-    fn read_enum_variant<T>(&mut self,
-                            names: &[&str],
-                            f: &fn(&mut Decoder, uint) -> T)
-                            -> T {
+    fn read_enum_variant<T: Sized>(&mut self,
+                                   names: &[&str],
+                                   f: &fn(&mut Decoder, uint) -> T)
+                                   -> T {
         debug!("read_enum_variant(names=%?)", names);
         let name = match self.stack.pop() {
             String(s) => s,
@@ -956,48 +956,48 @@ impl serialize::Decoder for Decoder {
         f(self, idx)
     }
 
-    fn read_enum_variant_arg<T>(&mut self,
-                                idx: uint,
-                                f: &fn(&mut Decoder) -> T)
-                                -> T {
+    fn read_enum_variant_arg<T: Sized>(&mut self,
+                                       idx: uint,
+                                       f: &fn(&mut Decoder) -> T)
+                                       -> T {
         debug!("read_enum_variant_arg(idx=%u)", idx);
         f(self)
     }
 
-    fn read_enum_struct_variant<T>(&mut self,
-                                   names: &[&str],
-                                   f: &fn(&mut Decoder, uint) -> T)
-                                   -> T {
+    fn read_enum_struct_variant<T: Sized>(&mut self,
+                                          names: &[&str],
+                                          f: &fn(&mut Decoder, uint) -> T)
+                                          -> T {
         debug!("read_enum_struct_variant(names=%?)", names);
         self.read_enum_variant(names, f)
     }
 
 
-    fn read_enum_struct_variant_field<T>(&mut self,
-                                         name: &str,
-                                         idx: uint,
-                                         f: &fn(&mut Decoder) -> T)
-                                         -> T {
+    fn read_enum_struct_variant_field<T: Sized>(&mut self,
+                                                name: &str,
+                                                idx: uint,
+                                                f: &fn(&mut Decoder) -> T)
+                                                -> T {
         debug!("read_enum_struct_variant_field(name=%?, idx=%u)", name, idx);
         self.read_enum_variant_arg(idx, f)
     }
 
-    fn read_struct<T>(&mut self,
-                      name: &str,
-                      len: uint,
-                      f: &fn(&mut Decoder) -> T)
-                      -> T {
+    fn read_struct<T: Sized>(&mut self,
+                             name: &str,
+                             len: uint,
+                             f: &fn(&mut Decoder) -> T)
+                             -> T {
         debug!("read_struct(name=%s, len=%u)", name, len);
         let value = f(self);
         self.stack.pop();
         value
     }
 
-    fn read_struct_field<T>(&mut self,
-                            name: &str,
-                            idx: uint,
-                            f: &fn(&mut Decoder) -> T)
-                            -> T {
+    fn read_struct_field<T: Sized>(&mut self,
+                                   name: &str,
+                                   idx: uint,
+                                   f: &fn(&mut Decoder) -> T)
+                                   -> T {
         debug!("read_struct_field(name=%?, idx=%u)", name, idx);
         match self.stack.pop() {
             Object(obj) => {
@@ -1016,43 +1016,43 @@ impl serialize::Decoder for Decoder {
         }
     }
 
-    fn read_tuple<T>(&mut self, f: &fn(&mut Decoder, uint) -> T) -> T {
+    fn read_tuple<T: Sized>(&mut self, f: &fn(&mut Decoder, uint) -> T) -> T {
         debug!("read_tuple()");
         self.read_seq(f)
     }
 
-    fn read_tuple_arg<T>(&mut self,
-                         idx: uint,
-                         f: &fn(&mut Decoder) -> T)
-                         -> T {
+    fn read_tuple_arg<T: Sized>(&mut self,
+                                idx: uint,
+                                f: &fn(&mut Decoder) -> T)
+                                -> T {
         debug!("read_tuple_arg(idx=%u)", idx);
         self.read_seq_elt(idx, f)
     }
 
-    fn read_tuple_struct<T>(&mut self,
-                            name: &str,
-                            f: &fn(&mut Decoder, uint) -> T)
-                            -> T {
+    fn read_tuple_struct<T: Sized>(&mut self,
+                                   name: &str,
+                                   f: &fn(&mut Decoder, uint) -> T)
+                                   -> T {
         debug!("read_tuple_struct(name=%?)", name);
         self.read_tuple(f)
     }
 
-    fn read_tuple_struct_arg<T>(&mut self,
-                                idx: uint,
-                                f: &fn(&mut Decoder) -> T)
-                                -> T {
+    fn read_tuple_struct_arg<T: Sized>(&mut self,
+                                       idx: uint,
+                                       f: &fn(&mut Decoder) -> T)
+                                       -> T {
         debug!("read_tuple_struct_arg(idx=%u)", idx);
         self.read_tuple_arg(idx, f)
     }
 
-    fn read_option<T>(&mut self, f: &fn(&mut Decoder, bool) -> T) -> T {
+    fn read_option<T: Sized>(&mut self, f: &fn(&mut Decoder, bool) -> T) -> T {
         match self.stack.pop() {
             Null => f(self, false),
             value => { self.stack.push(value); f(self, true) }
         }
     }
 
-    fn read_seq<T>(&mut self, f: &fn(&mut Decoder, uint) -> T) -> T {
+    fn read_seq<T: Sized>(&mut self, f: &fn(&mut Decoder, uint) -> T) -> T {
         debug!("read_seq()");
         let len = match self.stack.pop() {
             List(list) => {
@@ -1067,12 +1067,12 @@ impl serialize::Decoder for Decoder {
         f(self, len)
     }
 
-    fn read_seq_elt<T>(&mut self, idx: uint, f: &fn(&mut Decoder) -> T) -> T {
+    fn read_seq_elt<T: Sized>(&mut self, idx: uint, f: &fn(&mut Decoder) -> T) -> T {
         debug!("read_seq_elt(idx=%u)", idx);
         f(self)
     }
 
-    fn read_map<T>(&mut self, f: &fn(&mut Decoder, uint) -> T) -> T {
+    fn read_map<T: Sized>(&mut self, f: &fn(&mut Decoder, uint) -> T) -> T {
         debug!("read_map()");
         let len = match self.stack.pop() {
             Object(obj) => {
@@ -1089,16 +1089,16 @@ impl serialize::Decoder for Decoder {
         f(self, len)
     }
 
-    fn read_map_elt_key<T>(&mut self,
-                           idx: uint,
-                           f: &fn(&mut Decoder) -> T)
-                           -> T {
+    fn read_map_elt_key<T: Sized>(&mut self,
+                                  idx: uint,
+                                  f: &fn(&mut Decoder) -> T)
+                                  -> T {
         debug!("read_map_elt_key(idx=%u)", idx);
         f(self)
     }
 
-    fn read_map_elt_val<T>(&mut self, idx: uint, f: &fn(&mut Decoder) -> T)
-                           -> T {
+    fn read_map_elt_val<T: Sized>(&mut self, idx: uint, f: &fn(&mut Decoder) -> T)
+                                  -> T {
         debug!("read_map_elt_val(idx=%u)", idx);
         f(self)
     }
@@ -1318,11 +1318,11 @@ impl<A:ToJson,B:ToJson,C:ToJson> ToJson for (A, B, C) {
     }
 }
 
-impl<A:ToJson> ToJson for ~[A] {
+impl<A:Sized + ToJson> ToJson for ~[A] {
     fn to_json(&self) -> Json { List(self.map(|elt| elt.to_json())) }
 }
 
-impl<A:ToJson + Copy> ToJson for HashMap<~str, A> {
+impl<A:Sized + ToJson + Copy> ToJson for HashMap<~str, A> {
     fn to_json(&self) -> Json {
         let mut d = HashMap::new();
         for self.each |key, value| {

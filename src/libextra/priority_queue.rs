@@ -24,7 +24,7 @@ pub struct PriorityQueue<T> {
     priv data: ~[T],
 }
 
-impl<T:Ord> BaseIter<T> for PriorityQueue<T> {
+impl<T: Sized + Ord> BaseIter<T> for PriorityQueue<T> {
     /// Visit all values in the underlying vector.
     ///
     /// The values are **not** visited in order.
@@ -33,7 +33,7 @@ impl<T:Ord> BaseIter<T> for PriorityQueue<T> {
     fn size_hint(&self) -> Option<uint> { self.data.size_hint() }
 }
 
-impl<T:Ord> Container for PriorityQueue<T> {
+impl<T: Sized + Ord> Container for PriorityQueue<T> {
     /// Returns the length of the queue
     fn len(&const self) -> uint { vec::uniq_len(&const self.data) }
 
@@ -41,12 +41,12 @@ impl<T:Ord> Container for PriorityQueue<T> {
     fn is_empty(&const self) -> bool { self.len() == 0 }
 }
 
-impl<T:Ord> Mutable for PriorityQueue<T> {
+impl<T: Sized + Ord> Mutable for PriorityQueue<T> {
     /// Drop all items from the queue
     fn clear(&mut self) { self.data.truncate(0) }
 }
 
-impl<T:Ord> PriorityQueue<T> {
+impl<T: Sized + Ord> PriorityQueue<T> {
     /// Returns the greatest item in the queue - fails if empty
     pub fn top<'a>(&'a self) -> &'a T { &self.data[0] }
 

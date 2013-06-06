@@ -85,7 +85,7 @@ struct SemInner<Q> {
 struct Sem<Q>(Exclusive<SemInner<Q>>);
 
 #[doc(hidden)]
-fn new_sem<Q:Owned>(count: int, q: Q) -> Sem<Q> {
+fn new_sem<Q: Sized + Owned>(count: int, q: Q) -> Sem<Q> {
     Sem(exclusive(SemInner {
         count: count, waiters: new_waitqueue(), blocked: q }))
 }
@@ -100,7 +100,7 @@ fn new_sem_and_signal(count: int, num_condvars: uint)
 }
 
 #[doc(hidden)]
-impl<Q:Owned> Sem<Q> {
+impl<Q: Sized + Owned> Sem<Q> {
     pub fn acquire(&self) {
         unsafe {
             let mut waiter_nobe = None;
@@ -138,7 +138,7 @@ impl<Q:Owned> Sem<Q> {
 // FIXME(#3154) move both copies of this into Sem<Q>, and unify the 2 structs
 #[doc(hidden)]
 impl Sem<()> {
-    pub fn access<U>(&self, blk: &fn() -> U) -> U {
+    pub fn access<U: Sized>(&self, blk: &fn() -> U) -> U {
         let mut release = None;
         unsafe {
             do task::unkillable {
@@ -152,7 +152,7 @@ impl Sem<()> {
 
 #[doc(hidden)]
 impl Sem<~[Waitqueue]> {
-    pub fn access<U>(&self, blk: &fn() -> U) -> U {
+    pub fn access<U: Sized>(&self, blk: &fn() -> U) -> U {
         let mut release = None;
         unsafe {
             do task::unkillable {
@@ -171,7 +171,7 @@ type SemAndSignalRelease<'self> = SemReleaseGeneric<'self, ~[Waitqueue]>;
 struct SemReleaseGeneric<'self, Q> { sem: &'self Sem<Q> }
 
 #[unsafe_destructor]
-impl<'self, Q:Owned> Drop for SemReleaseGeneric<'self, Q> {
+impl<'self, Q: Sized + Owned> Drop for SemReleaseGeneric<'self, Q> {
     fn finalize(&self) {
         self.sem.release();
     }
@@ -338,7 +338,7 @@ impl<'self> Condvar<'self> {
 // something else next on success.
 #[inline(always)]
 #[doc(hidden)]
-fn check_cvar_bounds<U>(out_of_bounds: Option<uint>, id: uint, act: &str,
+fn check_cvar_bounds<U: Sized>(out_of_bounds: Option<uint>, id: uint, act: &str,
                         blk: &fn() -> U) -> U {
     match out_of_bounds {
         Some(0) =>
@@ -352,7 +352,7 @@ fn check_cvar_bounds<U>(out_of_bounds: Option<uint>, id: uint, act: &str,
 #[doc(hidden)]
 impl Sem<~[Waitqueue]> {
     // The only other place that condvars get built is rwlock_write_mode.
-    pub fn access_cond<U>(&self, blk: &fn(c: &Condvar) -> U) -> U {
+    pub fn access_cond<U: Sized>(&self, blk: &fn(c: &Condvar) -> U) -> U {
         do self.access { blk(&Condvar { sem: self }) }
     }
 }
@@ -390,7 +390,7 @@ impl Semaphore {
     pub fn release(&self) { (&self.sem).release() }
 
     /// Run a function with ownership of one of the semaphore's resources.
-    pub fn access<U>(&self, blk: &fn() -> U) -> U { (&self.sem).access(blk) }
+    pub fn access<U: Sized>(&self, blk: &fn() -> U) -> U { (&self.sem).access(blk) }
 }
 
 /****************************************************************************
@@ -426,10 +426,10 @@ impl Clone for Mutex {
 
 impl Mutex {
     /// Run a function with ownership of the mutex.
-    pub fn lock<U>(&self, blk: &fn() -> U) -> U { (&self.sem).access(blk) }
+    pub fn lock<U: Sized>(&self, blk: &fn() -> U) -> U { (&self.sem).access(blk) }
 
     /// Run a function with ownership of the mutex and a handle to a condvar.
-    pub fn lock_cond<U>(&self, blk: &fn(c: &Condvar) -> U) -> U {
+    pub fn lock_cond<U: Sized>(&self, blk: &fn(c: &Condvar) -> U) -> U {
         (&self.sem).access_cond(blk)
     }
 }
@@ -485,7 +485,7 @@ impl RWlock {
      * Run a function with the rwlock in read mode. Calls to 'read' from other
      * tasks may run concurrently with this one.
      */
-    pub fn read<U>(&self, blk: &fn() -> U) -> U {
+    pub fn read<U: Sized>(&self, blk: &fn() -> U) -> U {
         let mut release = None;
         unsafe {
             do task::unkillable {
@@ -516,7 +516,7 @@ impl RWlock {
      * Run a function with the rwlock in write mode. No calls to 'read' or
      * 'write' from other tasks will run concurrently with this one.
      */
-    pub fn write<U>(&self, blk: &fn() -> U) -> U {
+    pub fn write<U: Sized>(&self, blk: &fn() -> U) -> U {
         unsafe {
             do task::unkillable {
                 (&self.order_lock).acquire();
@@ -534,7 +534,7 @@ impl RWlock {
      * the waiting task is signalled. (Note: a writer that waited and then
      * was signalled might reacquire the lock before other waiting writers.)
      */
-    pub fn write_cond<U>(&self, blk: &fn(c: &Condvar) -> U) -> U {
+    pub fn write_cond<U: Sized>(&self, blk: &fn(c: &Condvar) -> U) -> U {
         // NB: You might think I should thread the order_lock into the cond
         // wait call, so that it gets waited on before access_lock gets
         // reacquired upon being woken up. However, (a) this would be not
@@ -572,7 +572,7 @@ impl RWlock {
      * }
      * ~~~
      */
-    pub fn write_downgrade<U>(&self, blk: &fn(v: RWlockWriteMode) -> U) -> U {
+    pub fn write_downgrade<U: Sized>(&self, blk: &fn(v: RWlockWriteMode) -> U) -> U {
         // Implementation slightly different from the slicker 'write's above.
         // The exit path is conditional on whether the caller downgrades.
         let mut _release = None;
@@ -707,16 +707,16 @@ impl<'self> Drop for RWlockReadMode<'self> { fn finalize(&self) {} }
 
 impl<'self> RWlockWriteMode<'self> {
     /// Access the pre-downgrade rwlock in write mode.
-    pub fn write<U>(&self, blk: &fn() -> U) -> U { blk() }
+    pub fn write<U: Sized>(&self, blk: &fn() -> U) -> U { blk() }
     /// Access the pre-downgrade rwlock in write mode with a condvar.
-    pub fn write_cond<U>(&self, blk: &fn(c: &Condvar) -> U) -> U {
+    pub fn write_cond<U: Sized>(&self, blk: &fn(c: &Condvar) -> U) -> U {
         blk(&Condvar { sem: &self.lock.access_lock })
     }
 }
 
 impl<'self> RWlockReadMode<'self> {
     /// Access the post-downgrade rwlock in read mode.
-    pub fn read<U>(&self, blk: &fn() -> U) -> U { blk() }
+    pub fn read<U: Sized>(&self, blk: &fn() -> U) -> U { blk() }
 }
 
 /****************************************************************************

@@ -26,7 +26,7 @@ pub struct Deque<T> {
     priv elts: ~[Option<T>]
 }
 
-impl<T> Container for Deque<T> {
+impl<T: Sized> Container for Deque<T> {
     /// Return the number of elements in the deque
     fn len(&const self) -> uint { self.nelts }
 
@@ -34,7 +34,7 @@ impl<T> Container for Deque<T> {
     fn is_empty(&const self) -> bool { self.len() == 0 }
 }
 
-impl<T> Mutable for Deque<T> {
+impl<T: Sized> Mutable for Deque<T> {
     /// Clear the deque, removing all values.
     fn clear(&mut self) {
         for self.elts.each_mut |x| { *x = None }
@@ -44,7 +44,7 @@ impl<T> Mutable for Deque<T> {
     }
 }
 
-impl<T> Deque<T> {
+impl<T: Sized> Deque<T> {
     /// Create an empty Deque
     pub fn new() -> Deque<T> {
         Deque{nelts: 0, lo: 0, hi: 0,
@@ -157,7 +157,7 @@ impl<T> Deque<T> {
 
 /// Grow is only called on full elts, so nelts is also len(elts), unlike
 /// elsewhere.
-fn grow<T>(nelts: uint, lo: uint, elts: &mut [Option<T>]) -> ~[Option<T>] {
+fn grow<T: Sized>(nelts: uint, lo: uint, elts: &mut [Option<T>]) -> ~[Option<T>] {
     assert_eq!(nelts, elts.len());
     let mut rv = ~[];
 
@@ -168,7 +168,7 @@ fn grow<T>(nelts: uint, lo: uint, elts: &mut [Option<T>]) -> ~[Option<T>] {
     rv
 }
 
-fn get<'r, T>(elts: &'r [Option<T>], i: uint) -> &'r T {
+fn get<'r, T: Sized>(elts: &'r [Option<T>], i: uint) -> &'r T {
     match elts[i] { Some(ref t) => t, _ => fail!() }
 }
 

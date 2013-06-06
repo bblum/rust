@@ -35,7 +35,7 @@ pub type Rational64 = Ratio<i64>;
 /// Alias for arbitrary precision rationals.
 pub type BigRational = Ratio<BigInt>;
 
-impl<T: Clone + Integer + Ord>
+impl<T: Sized + Clone + Integer + Ord>
     Ratio<T> {
     /// Create a ratio representing the integer `t`.
     #[inline(always)]
@@ -115,7 +115,7 @@ cmp_impl!(impl TotalOrd, cmp -> cmp::Ordering)
 
 /* Arithmetic */
 // a/b * c/d = (a*c)/(b*d)
-impl<T: Clone + Integer + Ord>
+impl<T: Sized + Clone + Integer + Ord>
     Mul<Ratio<T>,Ratio<T>> for Ratio<T> {
     #[inline]
     fn mul(&self, rhs: &Ratio<T>) -> Ratio<T> {
@@ -124,7 +124,7 @@ impl<T: Clone + Integer + Ord>
 }
 
 // (a/b) / (c/d) = (a*d)/(b*c)
-impl<T: Clone + Integer + Ord>
+impl<T: Sized + Clone + Integer + Ord>
     Div<Ratio<T>,Ratio<T>> for Ratio<T> {
     #[inline]
     fn div(&self, rhs: &Ratio<T>) -> Ratio<T> {
@@ -135,7 +135,7 @@ impl<T: Clone + Integer + Ord>
 // Abstracts the a/b `op` c/d = (a*d `op` b*d) / (b*d) pattern
 macro_rules! arith_impl {
     (impl $imp:ident, $method:ident) => {
-        impl<T: Clone + Integer + Ord>
+        impl<T: Sized + Clone + Integer + Ord>
             $imp<Ratio<T>,Ratio<T>> for Ratio<T> {
             #[inline]
             fn $method(&self, rhs: &Ratio<T>) -> Ratio<T> {
@@ -155,7 +155,7 @@ arith_impl!(impl Sub, sub)
 // a/b % c/d = (a*d % b*c)/(b*d)
 arith_impl!(impl Rem, rem)
 
-impl<T: Clone + Integer + Ord>
+impl<T: Sized + Clone + Integer + Ord>
     Neg<Ratio<T>> for Ratio<T> {
     #[inline]
     fn neg(&self) -> Ratio<T> {
@@ -164,7 +164,7 @@ impl<T: Clone + Integer + Ord>
 }
 
 /* Constants */
-impl<T: Clone + Integer + Ord>
+impl<T: Sized + Clone + Integer + Ord>
     Zero for Ratio<T> {
     #[inline]
     fn zero() -> Ratio<T> {
@@ -177,7 +177,7 @@ impl<T: Clone + Integer + Ord>
     }
 }
 
-impl<T: Clone + Integer + Ord>
+impl<T: Sized + Clone + Integer + Ord>
     One for Ratio<T> {
     #[inline]
     fn one() -> Ratio<T> {
@@ -185,11 +185,11 @@ impl<T: Clone + Integer + Ord>
     }
 }
 
-impl<T: Clone + Integer + Ord>
+impl<T: Sized + Clone + Integer + Ord>
     Num for Ratio<T> {}
 
 /* Utils */
-impl<T: Clone + Integer + Ord>
+impl<T: Sized + Clone + Integer + Ord>
     Round for Ratio<T> {
 
     fn floor(&self) -> Ratio<T> {
@@ -227,7 +227,7 @@ impl<T: Clone + Integer + Ord>
     }
 }
 
-impl<T: Clone + Integer + Ord> Fractional for Ratio<T> {
+impl<T: Sized + Clone + Integer + Ord> Fractional for Ratio<T> {
     #[inline]
     fn recip(&self) -> Ratio<T> {
         Ratio::new_raw(self.denom.clone(), self.numer.clone())
@@ -248,7 +248,7 @@ impl<T: ToStrRadix> ToStrRadix for Ratio<T> {
     }
 }
 
-impl<T: FromStr + Clone + Integer + Ord>
+impl<T: Sized + FromStr + Clone + Integer + Ord>
     FromStr for Ratio<T> {
     /// Parses `numer/denom`.
     fn from_str(s: &str) -> Option<Ratio<T>> {
@@ -265,7 +265,7 @@ impl<T: FromStr + Clone + Integer + Ord>
         }
     }
 }
-impl<T: FromStrRadix + Clone + Integer + Ord>
+impl<T: Sized + FromStrRadix + Clone + Integer + Ord>
     FromStrRadix for Ratio<T> {
     /// Parses `numer/denom` where the numbers are in base `radix`.
     fn from_str_radix(s: &str, radix: uint) -> Option<Ratio<T>> {

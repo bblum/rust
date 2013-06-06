@@ -40,7 +40,7 @@ pub struct Rc<T> {
     priv ptr: *mut RcBox<T>,
 }
 
-impl<T> Rc<T> {
+impl<T: Sized> Rc<T> {
     unsafe fn new(value: T) -> Rc<T> {
         let ptr = malloc(sys::size_of::<RcBox<T>>() as size_t) as *mut RcBox<T>;
         assert!(!ptr::is_null(ptr));
@@ -50,12 +50,12 @@ impl<T> Rc<T> {
 }
 
 // FIXME: #6516: should be a static method
-pub fn rc_from_owned<T: Owned>(value: T) -> Rc<T> {
+pub fn rc_from_owned<T: Sized + Owned>(value: T) -> Rc<T> {
     unsafe { Rc::new(value) }
 }
 
 // FIXME: #6516: should be a static method
-pub fn rc_from_const<T: Const>(value: T) -> Rc<T> {
+pub fn rc_from_const<T: Sized + Const>(value: T) -> Rc<T> {
     unsafe { Rc::new(value) }
 }
 
@@ -67,7 +67,7 @@ impl<T> Rc<T> {
 }
 
 #[unsafe_destructor]
-impl<T> Drop for Rc<T> {
+impl<T: Sized> Drop for Rc<T> {
     fn finalize(&self) {
         unsafe {
             (*self.ptr).count -= 1;
@@ -90,7 +90,7 @@ impl<T> Clone for Rc<T> {
     }
 }
 
-impl<T: DeepClone> DeepClone for Rc<T> {
+impl<T: Sized + DeepClone> DeepClone for Rc<T> {
     /// Return a deep copy of the reference counted pointer.
     #[inline]
     fn deep_clone(&self) -> Rc<T> {
@@ -170,7 +170,7 @@ pub struct RcMut<T> {
     priv ptr: *mut RcMutBox<T>,
 }
 
-impl<T> RcMut<T> {
+impl<T: Sized> RcMut<T> {
     unsafe fn new(value: T) -> RcMut<T> {
         let ptr = malloc(sys::size_of::<RcMutBox<T>>() as size_t) as *mut RcMutBox<T>;
         assert!(!ptr::is_null(ptr));
@@ -180,19 +180,19 @@ impl<T> RcMut<T> {
 }
 
 // FIXME: #6516: should be a static method
-pub fn rc_mut_from_owned<T: Owned>(value: T) -> RcMut<T> {
+pub fn rc_mut_from_owned<T: Sized + Owned>(value: T) -> RcMut<T> {
     unsafe { RcMut::new(value) }
 }
 
 // FIXME: #6516: should be a static method
-pub fn rc_mut_from_const<T: Const>(value: T) -> RcMut<T> {
+pub fn rc_mut_from_const<T: Sized + Const>(value: T) -> RcMut<T> {
     unsafe { RcMut::new(value) }
 }
 
-impl<T> RcMut<T> {
+impl<T: Sized> RcMut<T> {
     /// Fails if there is already a mutable borrow of the box
     #[inline]
-    pub fn with_borrow<U>(&self, f: &fn(&T) -> U) -> U {
+    pub fn with_borrow<U: Sized>(&self, f: &fn(&T) -> U) -> U {
         unsafe {
             assert!((*self.ptr).borrow != Mutable);
             let previous = (*self.ptr).borrow;
@@ -205,7 +205,7 @@ impl<T> RcMut<T> {
 
     /// Fails if there is already a mutable or immutable borrow of the box
     #[inline]
-    pub fn with_mut_borrow<U>(&self, f: &fn(&mut T) -> U) -> U {
+    pub fn with_mut_borrow<U: Sized>(&self, f: &fn(&mut T) -> U) -> U {
         unsafe {
             assert_eq!((*self.ptr).borrow, Nothing);
             (*self.ptr).borrow = Mutable;
@@ -217,7 +217,7 @@ impl<T> RcMut<T> {
 }
 
 #[unsafe_destructor]
-impl<T> Drop for RcMut<T> {
+impl<T: Sized> Drop for RcMut<T> {
     fn finalize(&self) {
         unsafe {
             (*self.ptr).count -= 1;
@@ -229,7 +229,7 @@ impl<T> Drop for RcMut<T> {
     }
 }
 
-impl<T> Clone for RcMut<T> {
+impl<T: Sized> Clone for RcMut<T> {
     /// Return a shallow copy of the reference counted pointer.
     #[inline]
     fn clone(&self) -> RcMut<T> {
@@ -240,7 +240,7 @@ impl<T> Clone for RcMut<T> {
     }
 }
 
-impl<T: DeepClone> DeepClone for RcMut<T> {
+impl<T: Sized + DeepClone> DeepClone for RcMut<T> {
     /// Return a deep copy of the reference counted pointer.
     #[inline]
     fn deep_clone(&self) -> RcMut<T> {

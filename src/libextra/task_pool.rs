@@ -42,7 +42,7 @@ impl<T> Drop for TaskPool<T> {
     }
 }
 
-impl<T> TaskPool<T> {
+impl<T: Sized> TaskPool<T> {
     /// Spawns a new task pool with `n_tasks` tasks. If the `sched_mode`
     /// is None, the tasks run on this scheduler; otherwise, they run on a
     /// new scheduler with the given mode. The provided `init_fn_factory`

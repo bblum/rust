@@ -10,6 +10,7 @@
 
 use core::io::{Reader, BytesReader};
 use core::io;
+use core::kinds::Sized;
 
 /// An implementation of the io::Reader interface which reads a buffer of bytes
 pub struct BufReader {
@@ -28,7 +29,7 @@ impl BufReader {
         }
     }
 
-    fn as_bytes_reader<A>(&self, f: &fn(&BytesReader) -> A) -> A {
+    fn as_bytes_reader<A: Sized>(&self, f: &fn(&BytesReader) -> A) -> A {
         // Recreating the BytesReader state every call since
         // I can't get the borrowing to work correctly
         let bytes_reader = BytesReader {

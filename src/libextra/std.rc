@@ -138,6 +138,7 @@ pub mod std {
     pub use core::clone;
     pub use core::condition;
     pub use core::cmp;
+    pub use core::kinds;
     pub use core::sys;
     pub use core::unstable;
     pub use core::str;

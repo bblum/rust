@@ -92,7 +92,7 @@ impl<T> DListNode<T> {
 }
 
 /// Creates a new dlist node with the given data.
-pub fn new_dlist_node<T>(data: T) -> @mut DListNode<T> {
+pub fn new_dlist_node<T: Sized>(data: T) -> @mut DListNode<T> {
     @mut DListNode { data: data, linked: false, prev: None, next: None }
 }
 
@@ -102,14 +102,14 @@ pub fn DList<T>() -> @mut DList<T> {
 }
 
 /// Creates a new dlist with a single element
-pub fn from_elem<T>(data: T) -> @mut DList<T> {
+pub fn from_elem<T: Sized>(data: T) -> @mut DList<T> {
     let list = DList();
     list.push(data);
     list
 }
 
 /// Creates a new dlist from a vector of elements, maintaining the same order
-pub fn from_vec<T:Copy>(vec: &[T]) -> @mut DList<T> {
+pub fn from_vec<T: Sized + Copy>(vec: &[T]) -> @mut DList<T> {
     do vec::foldl(DList(), vec) |list,data| {
         list.push(*data); // Iterating left-to-right -- add newly to the tail.
         list
@@ -118,7 +118,7 @@ pub fn from_vec<T:Copy>(vec: &[T]) -> @mut DList<T> {
 
 /// Produce a list from a list of lists, leaving no elements behind in the
 /// input. O(number of sub-lists).
-pub fn concat<T>(lists: @mut DList<@mut DList<T>>) -> @mut DList<T> {
+pub fn concat<T: Sized>(lists: @mut DList<@mut DList<T>>) -> @mut DList<T> {
     let result = DList();
     while !lists.is_empty() {
         result.append(lists.pop().get());
@@ -126,7 +126,7 @@ pub fn concat<T>(lists: @mut DList<@mut DList<T>>) -> @mut DList<T> {
     result
 }
 
-impl<T> DList<T> {
+impl<T: Sized> DList<T> {
     fn new_link(data: T) -> DListLink<T> {
         Some(@mut DListNode {
             data: data,
@@ -211,7 +211,7 @@ impl<T> DList<T> {
     }
 }
 
-impl<T> DList<T> {
+impl<T: Sized> DList<T> {
     /// Get the size of the list. O(1).
     pub fn len(@mut self) -> uint { self.size }
     /// Returns true if the list is empty. O(1).
@@ -457,7 +457,7 @@ impl<T> DList<T> {
     }
 }
 
-impl<T:Copy> DList<T> {
+impl<T: Sized + Copy> DList<T> {
     /// Remove data from the head of the list. O(1).
     pub fn pop(@mut self) -> Option<T> {
         self.pop_n().map(|nobe| nobe.data)
@@ -494,7 +494,7 @@ impl<T:Copy> DList<T> {
     }
 }
 
-impl<T> BaseIter<T> for @mut DList<T> {
+impl<T: Sized> BaseIter<T> for @mut DList<T> {
     /**
      * Iterates through the current contents.
      *

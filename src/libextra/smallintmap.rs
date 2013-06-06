@@ -30,7 +30,7 @@ pub struct SmallIntMap<T> {
     priv v: ~[Option<T>],
 }
 
-impl<V> Container for SmallIntMap<V> {
+impl<V: Sized> Container for SmallIntMap<V> {
     /// Return the number of elements in the map
     fn len(&const self) -> uint {
         let mut sz = 0;
@@ -47,12 +47,12 @@ impl<V> Container for SmallIntMap<V> {
     fn is_empty(&const self) -> bool { self.len() == 0 }
 }
 
-impl<V> Mutable for SmallIntMap<V> {
+impl<V: Sized> Mutable for SmallIntMap<V> {
     /// Clear the map, removing all key-value pairs.
     fn clear(&mut self) { self.v.clear() }
 }
 
-impl<V> Map<uint, V> for SmallIntMap<V> {
+impl<V: Sized> Map<uint, V> for SmallIntMap<V> {
     /// Return true if the map contains a value for the specified key
     fn contains_key(&self, key: &uint) -> bool {
         self.find(key).is_some()
@@ -154,7 +154,7 @@ impl<V> Map<uint, V> for SmallIntMap<V> {
     }
 }
 
-impl<V> SmallIntMap<V> {
+impl<V: Sized> SmallIntMap<V> {
     /// Create an empty SmallIntMap
     pub fn new() -> SmallIntMap<V> { SmallIntMap{v: ~[]} }
 
@@ -174,7 +174,7 @@ impl<V> SmallIntMap<V> {
     }
 }
 
-impl<V:Copy> SmallIntMap<V> {
+impl<V: Sized + Copy> SmallIntMap<V> {
     pub fn update_with_key(&mut self, key: uint, val: V,
                            ff: &fn(uint, V, V) -> V) -> bool {
         let new_val = match self.find(&key) {

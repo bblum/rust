@@ -39,10 +39,10 @@ use core::libc;
  * * ch - a channel of type T to send a `val` on
  * * val - a value of type T to send over the provided `ch`
  */
-pub fn delayed_send<T:Owned>(iotask: &IoTask,
-                              msecs: uint,
-                              ch: &Chan<T>,
-                              val: T) {
+pub fn delayed_send<T:Sized + Owned>(iotask: &IoTask,
+                                     msecs: uint,
+                                     ch: &Chan<T>,
+                                     val: T) {
     let (timer_done_po, timer_done_ch) = stream::<()>();
     let timer_done_ch = SharedChan::new(timer_done_ch);
     let timer = uv::ll::timer_t();
@@ -119,10 +119,10 @@ pub fn sleep(iotask: &IoTask, msecs: uint) {
  * on the provided port in the allotted timeout period, then the result will
  * be a `Some(T)`. If not, then `None` will be returned.
  */
-pub fn recv_timeout<T:Copy + Owned>(iotask: &IoTask,
-                                   msecs: uint,
-                                   wait_po: &Port<T>)
-                                   -> Option<T> {
+pub fn recv_timeout<T:Sized + Copy + Owned>(iotask: &IoTask,
+                                            msecs: uint,
+                                            wait_po: &Port<T>)
+                                            -> Option<T> {
     let mut (timeout_po, timeout_ch) = stream::<()>();
     delayed_send(iotask, msecs, &timeout_ch, ());
 

@@ -35,7 +35,7 @@ pub type Complex = Cmplx<float>;
 pub type Complex32 = Cmplx<f32>;
 pub type Complex64 = Cmplx<f64>;
 
-impl<T: Copy + Num> Cmplx<T> {
+impl<T: Sized + Copy + Num> Cmplx<T> {
     /// Create a new Cmplx
     #[inline]
     pub fn new(re: T, im: T) -> Cmplx<T> {
@@ -82,21 +82,21 @@ impl<T: Copy + Num> Cmplx<T> {
 
 /* arithmetic */
 // (a + i b) + (c + i d) == (a + c) + i (b + d)
-impl<T: Copy + Num> Add<Cmplx<T>, Cmplx<T>> for Cmplx<T> {
+impl<T: Sized + Copy + Num> Add<Cmplx<T>, Cmplx<T>> for Cmplx<T> {
     #[inline]
     fn add(&self, other: &Cmplx<T>) -> Cmplx<T> {
         Cmplx::new(self.re + other.re, self.im + other.im)
     }
 }
 // (a + i b) - (c + i d) == (a - c) + i (b - d)
-impl<T: Copy + Num> Sub<Cmplx<T>, Cmplx<T>> for Cmplx<T> {
+impl<T: Sized + Copy + Num> Sub<Cmplx<T>, Cmplx<T>> for Cmplx<T> {
     #[inline]
     fn sub(&self, other: &Cmplx<T>) -> Cmplx<T> {
         Cmplx::new(self.re - other.re, self.im - other.im)
     }
 }
 // (a + i b) * (c + i d) == (a*c - b*d) + i (a*d + b*c)
-impl<T: Copy + Num> Mul<Cmplx<T>, Cmplx<T>> for Cmplx<T> {
+impl<T: Sized + Copy + Num> Mul<Cmplx<T>, Cmplx<T>> for Cmplx<T> {
     #[inline]
     fn mul(&self, other: &Cmplx<T>) -> Cmplx<T> {
         Cmplx::new(self.re*other.re - self.im*other.im,
@@ -106,7 +106,7 @@ impl<T: Copy + Num> Mul<Cmplx<T>, Cmplx<T>> for Cmplx<T> {
 
 // (a + i b) / (c + i d) == [(a + i b) * (c - i d)] / (c*c + d*d)
 //   == [(a*c + b*d) / (c*c + d*d)] + i [(b*c - a*d) / (c*c + d*d)]
-impl<T: Copy + Num> Div<Cmplx<T>, Cmplx<T>> for Cmplx<T> {
+impl<T: Sized + Copy + Num> Div<Cmplx<T>, Cmplx<T>> for Cmplx<T> {
     #[inline]
     fn div(&self, other: &Cmplx<T>) -> Cmplx<T> {
         let norm_sqr = other.norm_sqr();
@@ -115,7 +115,7 @@ impl<T: Copy + Num> Div<Cmplx<T>, Cmplx<T>> for Cmplx<T> {
     }
 }
 
-impl<T: Copy + Num> Neg<Cmplx<T>> for Cmplx<T> {
+impl<T: Sized + Copy + Num> Neg<Cmplx<T>> for Cmplx<T> {
     #[inline]
     fn neg(&self) -> Cmplx<T> {
         Cmplx::new(-self.re, -self.im)
@@ -123,7 +123,7 @@ impl<T: Copy + Num> Neg<Cmplx<T>> for Cmplx<T> {
 }
 
 /* constants */
-impl<T: Copy + Num> Zero for Cmplx<T> {
+impl<T: Sized + Copy + Num> Zero for Cmplx<T> {
     #[inline]
     fn zero() -> Cmplx<T> {
         Cmplx::new(Zero::zero(), Zero::zero())
@@ -135,7 +135,7 @@ impl<T: Copy + Num> Zero for Cmplx<T> {
     }
 }
 
-impl<T: Copy + Num> One for Cmplx<T> {
+impl<T: Sized + Copy + Num> One for Cmplx<T> {
     #[inline]
     fn one() -> Cmplx<T> {
         Cmplx::new(One::one(), Zero::zero())

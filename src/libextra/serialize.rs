@@ -114,66 +114,66 @@ pub trait Decoder {
     fn read_str(&mut self) -> ~str;
 
     // Compound types:
-    fn read_enum<T>(&mut self, name: &str, f: &fn(&mut Self) -> T) -> T;
+    fn read_enum<T: Sized>(&mut self, name: &str, f: &fn(&mut Self) -> T) -> T;
 
-    fn read_enum_variant<T>(&mut self,
+    fn read_enum_variant<T: Sized>(&mut self,
                             names: &[&str],
                             f: &fn(&mut Self, uint) -> T)
                             -> T;
-    fn read_enum_variant_arg<T>(&mut self,
+    fn read_enum_variant_arg<T: Sized>(&mut self,
                                 a_idx: uint,
                                 f: &fn(&mut Self) -> T)
                                 -> T;
 
-    fn read_enum_struct_variant<T>(&mut self,
+    fn read_enum_struct_variant<T: Sized>(&mut self,
                                    names: &[&str],
                                    f: &fn(&mut Self, uint) -> T)
                                    -> T;
-    fn read_enum_struct_variant_field<T>(&mut self,
+    fn read_enum_struct_variant_field<T: Sized>(&mut self,
                                          &f_name: &str,
                                          f_idx: uint,
                                          f: &fn(&mut Self) -> T)
                                          -> T;
 
-    fn read_struct<T>(&mut self,
+    fn read_struct<T: Sized>(&mut self,
                       s_name: &str,
                       len: uint,
                       f: &fn(&mut Self) -> T)
                       -> T;
-    fn read_struct_field<T>(&mut self,
+    fn read_struct_field<T: Sized>(&mut self,
                             f_name: &str,
                             f_idx: uint,
                             f: &fn(&mut Self) -> T)
                             -> T;
 
-    fn read_tuple<T>(&mut self, f: &fn(&mut Self, uint) -> T) -> T;
-    fn read_tuple_arg<T>(&mut self, a_idx: uint, f: &fn(&mut Self) -> T) -> T;
+    fn read_tuple<T: Sized>(&mut self, f: &fn(&mut Self, uint) -> T) -> T;
+    fn read_tuple_arg<T: Sized>(&mut self, a_idx: uint, f: &fn(&mut Self) -> T) -> T;
 
-    fn read_tuple_struct<T>(&mut self,
+    fn read_tuple_struct<T: Sized>(&mut self,
                             s_name: &str,
                             f: &fn(&mut Self, uint) -> T)
                             -> T;
-    fn read_tuple_struct_arg<T>(&mut self,
+    fn read_tuple_struct_arg<T: Sized>(&mut self,
                                 a_idx: uint,
                                 f: &fn(&mut Self) -> T)
                                 -> T;
 
     // Specialized types:
-    fn read_option<T>(&mut self, f: &fn(&mut Self, bool) -> T) -> T;
+    fn read_option<T: Sized>(&mut self, f: &fn(&mut Self, bool) -> T) -> T;
 
-    fn read_seq<T>(&mut self, f: &fn(&mut Self, uint) -> T) -> T;
-    fn read_seq_elt<T>(&mut self, idx: uint, f: &fn(&mut Self) -> T) -> T;
+    fn read_seq<T: Sized>(&mut self, f: &fn(&mut Self, uint) -> T) -> T;
+    fn read_seq_elt<T: Sized>(&mut self, idx: uint, f: &fn(&mut Self) -> T) -> T;
 
-    fn read_map<T>(&mut self, f: &fn(&mut Self, uint) -> T) -> T;
-    fn read_map_elt_key<T>(&mut self, idx: uint, f: &fn(&mut Self) -> T) -> T;
-    fn read_map_elt_val<T>(&mut self, idx: uint, f: &fn(&mut Self) -> T) -> T;
+    fn read_map<T: Sized>(&mut self, f: &fn(&mut Self, uint) -> T) -> T;
+    fn read_map_elt_key<T: Sized>(&mut self, idx: uint, f: &fn(&mut Self) -> T) -> T;
+    fn read_map_elt_val<T: Sized>(&mut self, idx: uint, f: &fn(&mut Self) -> T) -> T;
 }
 
 pub trait Encodable<S:Encoder> {
     fn encode(&self, s: &mut S);
 }
 
-pub trait Decodable<D:Decoder> {
+pub trait Decodable<D:Sized + Decoder> {
     fn decode(d: &mut D) -> Self;
 }
 
@@ -183,7 +183,7 @@ impl<S:Encoder> Encodable<S> for uint {
     }
 }
 
-impl<D:Decoder> Decodable<D> for uint {
+impl<D:Sized + Decoder> Decodable<D> for uint {
     fn decode(d: &mut D) -> uint {
         d.read_uint()
     }
@@ -195,7 +195,7 @@ impl<S:Encoder> Encodable<S> for u8 {
     }
 }
 
-impl<D:Decoder> Decodable<D> for u8 {
+impl<D:Sized + Decoder> Decodable<D> for u8 {
     fn decode(d: &mut D) -> u8 {
         d.read_u8()
     }
@@ -207,7 +207,7 @@ impl<S:Encoder> Encodable<S> for u16 {
     }
 }
 
-impl<D:Decoder> Decodable<D> for u16 {
+impl<D:Sized + Decoder> Decodable<D> for u16 {
     fn decode(d: &mut D) -> u16 {
         d.read_u16()
     }
@@ -219,7 +219,7 @@ impl<S:Encoder> Encodable<S> for u32 {
     }
 }
 
-impl<D:Decoder> Decodable<D> for u32 {
+impl<D:Sized + Decoder> Decodable<D> for u32 {
     fn decode(d: &mut D) -> u32 {
         d.read_u32()
     }
@@ -231,7 +231,7 @@ impl<S:Encoder> Encodable<S> for u64 {
     }
 }
 
-impl<D:Decoder> Decodable<D> for u64 {
+impl<D:Sized + Decoder> Decodable<D> for u64 {
     fn decode(d: &mut D) -> u64 {
         d.read_u64()
     }
@@ -243,7 +243,7 @@ impl<S:Encoder> Encodable<S> for int {
     }
 }
 
-impl<D:Decoder> Decodable<D> for int {
+impl<D:Sized + Decoder> Decodable<D> for int {
     fn decode(d: &mut D) -> int {
         d.read_int()
     }
@@ -255,7 +255,7 @@ impl<S:Encoder> Encodable<S> for i8 {
     }
 }
 
-impl<D:Decoder> Decodable<D> for i8 {
+impl<D:Sized + Decoder> Decodable<D> for i8 {
     fn decode(d: &mut D) -> i8 {
         d.read_i8()
     }
@@ -267,7 +267,7 @@ impl<S:Encoder> Encodable<S> for i16 {
     }
 }
 
-impl<D:Decoder> Decodable<D> for i16 {
+impl<D:Sized + Decoder> Decodable<D> for i16 {
     fn decode(d: &mut D) -> i16 {
         d.read_i16()
     }
@@ -279,7 +279,7 @@ impl<S:Encoder> Encodable<S> for i32 {
     }
 }
 
-impl<D:Decoder> Decodable<D> for i32 {
+impl<D:Sized + Decoder> Decodable<D> for i32 {
     fn decode(d: &mut D) -> i32 {
         d.read_i32()
     }
@@ -291,7 +291,7 @@ impl<S:Encoder> Encodable<S> for i64 {
     }
 }
 
-impl<D:Decoder> Decodable<D> for i64 {
+impl<D:Sized + Decoder> Decodable<D> for i64 {
     fn decode(d: &mut D) -> i64 {
         d.read_i64()
     }
@@ -309,7 +309,7 @@ impl<S:Encoder> Encodable<S> for ~str {
     }
 }
 
-impl<D:Decoder> Decodable<D> for ~str {
+impl<D:Sized + Decoder> Decodable<D> for ~str {
     fn decode(d: &mut D) -> ~str {
         d.read_str()
     }
@@ -321,7 +321,7 @@ impl<S:Encoder> Encodable<S> for @str {
     }
 }
 
-impl<D:Decoder> Decodable<D> for @str {
+impl<D:Sized + Decoder> Decodable<D> for @str {
     fn decode(d: &mut D) -> @str {
         d.read_str().to_managed()
     }
@@ -333,7 +333,7 @@ impl<S:Encoder> Encodable<S> for float {
     }
 }
 
-impl<D:Decoder> Decodable<D> for float {
+impl<D:Sized + Decoder> Decodable<D> for float {
     fn decode(d: &mut D) -> float {
         d.read_float()
     }
@@ -345,7 +345,7 @@ impl<S:Encoder> Encodable<S> for f32 {
     }
 }
 
-impl<D:Decoder> Decodable<D> for f32 {
+impl<D:Sized + Decoder> Decodable<D> for f32 {
     fn decode(d: &mut D) -> f32 {
         d.read_f32()
     }
@@ -357,7 +357,7 @@ impl<S:Encoder> Encodable<S> for f64 {
     }
 }
 
-impl<D:Decoder> Decodable<D> for f64 {
+impl<D:Sized + Decoder> Decodable<D> for f64 {
     fn decode(d: &mut D) -> f64 {
         d.read_f64()
     }
@@ -369,7 +369,7 @@ impl<S:Encoder> Encodable<S> for bool {
     }
 }
 
-impl<D:Decoder> Decodable<D> for bool {
+impl<D:Sized + Decoder> Decodable<D> for bool {
     fn decode(d: &mut D) -> bool {
         d.read_bool()
     }
@@ -381,7 +381,7 @@ impl<S:Encoder> Encodable<S> for char {
     }
 }
 
-impl<D:Decoder> Decodable<D> for char {
+impl<D:Sized + Decoder> Decodable<D> for char {
     fn decode(d: &mut D) -> char {
         d.read_char()
     }
@@ -393,7 +393,7 @@ impl<S:Encoder> Encodable<S> for () {
     }
 }
 
-impl<D:Decoder> Decodable<D> for () {
+impl<D:Sized + Decoder> Decodable<D> for () {
     fn decode(d: &mut D) -> () {
         d.read_nil()
     }
@@ -411,7 +411,7 @@ impl<S:Encoder,T:Encodable<S>> Encodable<S> for ~T {
     }
 }
 
-impl<D:Decoder,T:Decodable<D>> Decodable<D> for ~T {
+impl<D:Sized + Decoder,T:Decodable<D>> Decodable<D> for ~T {
     fn decode(d: &mut D) -> ~T {
         ~Decodable::decode(d)
     }
@@ -423,13 +423,13 @@ impl<S:Encoder,T:Encodable<S>> Encodable<S> for @T {
     }
 }
 
-impl<D:Decoder,T:Decodable<D>> Decodable<D> for @T {
+impl<D:Sized + Decoder,T:Decodable<D>> Decodable<D> for @T {
     fn decode(d: &mut D) -> @T {
         @Decodable::decode(d)
     }
 }
 
-impl<'self, S:Encoder,T:Encodable<S>> Encodable<S> for &'self [T] {
+impl<'self, S:Encoder,T:Sized+Encodable<S>> Encodable<S> for &'self [T] {
     fn encode(&self, s: &mut S) {
         do s.emit_seq(self.len()) |s| {
             for self.eachi |i, e| {
@@ -439,7 +439,7 @@ impl<'self, S:Encoder,T:Encodable<S>> Encodable<S> for &'self [T] {
     }
 }
 
-impl<S:Encoder,T:Encodable<S>> Encodable<S> for ~[T] {
+impl<S:Encoder,T:Sized+Encodable<S>> Encodable<S> for ~[T] {
     fn encode(&self, s: &mut S) {
         do s.emit_seq(self.len()) |s| {
             for self.eachi |i, e| {
@@ -449,7 +449,7 @@ impl<S:Encoder,T:Encodable<S>> Encodable<S> for ~[T] {
     }
 }
 
-impl<D:Decoder,T:Decodable<D>> Decodable<D> for ~[T] {
+impl<D:Sized + Decoder,T:Sized+Decodable<D>> Decodable<D> for ~[T] {
     fn decode(d: &mut D) -> ~[T] {
         do d.read_seq |d, len| {
             do vec::from_fn(len) |i| {
@@ -459,7 +459,7 @@ impl<D:Decoder,T:Decodable<D>> Decodable<D> for ~[T] {
     }
 }
 
-impl<S:Encoder,T:Encodable<S>> Encodable<S> for @[T] {
+impl<S:Encoder,T:Sized+Encodable<S>> Encodable<S> for @[T] {
     fn encode(&self, s: &mut S) {
         do s.emit_seq(self.len()) |s| {
             for self.eachi |i, e| {
@@ -469,7 +469,7 @@ impl<S:Encoder,T:Encodable<S>> Encodable<S> for @[T] {
     }
 }
 
-impl<D:Decoder,T:Decodable<D>> Decodable<D> for @[T] {
+impl<D:Sized + Decoder,T:Sized+Decodable<D>> Decodable<D> for @[T] {
     fn decode(d: &mut D) -> @[T] {
         do d.read_seq |d, len| {
             do at_vec::from_fn(len) |i| {
@@ -490,7 +490,7 @@ impl<S:Encoder,T:Encodable<S>> Encodable<S> for Option<T> {
     }
 }
 
-impl<D:Decoder,T:Decodable<D>> Decodable<D> for Option<T> {
+impl<D:Sized + Decoder,T:Sized+Decodable<D>> Decodable<D> for Option<T> {
     fn decode(d: &mut D) -> Option<T> {
         do d.read_option |d, b| {
             if b {
@@ -502,7 +502,7 @@ impl<D:Decoder,T:Decodable<D>> Decodable<D> for Option<T> {
     }
 }
 
-impl<S:Encoder,T0:Encodable<S>,T1:Encodable<S>> Encodable<S> for (T0, T1) {
+impl<S:Encoder,T0:Sized+Encodable<S>,T1:Sized+Encodable<S>> Encodable<S> for (T0, T1) {
     fn encode(&self, s: &mut S) {
         match *self {
             (ref t0, ref t1) => {
@@ -515,7 +515,7 @@ impl<S:Encoder,T0:Encodable<S>,T1:Encodable<S>> Encodable<S> for (T0, T1) {
     }
 }
 
-impl<D:Decoder,T0:Decodable<D>,T1:Decodable<D>> Decodable<D> for (T0, T1) {
+impl<D:Sized + Decoder,T0:Sized+Decodable<D>,T1:Sized+Decodable<D>> Decodable<D> for (T0, T1) {
     fn decode(d: &mut D) -> (T0, T1) {
         do d.read_seq |d, len| {
             assert_eq!(len, 2);
@@ -547,10 +547,10 @@ impl<
 }
 
 impl<
-    D: Decoder,
-    T0: Decodable<D>,
-    T1: Decodable<D>,
-    T2: Decodable<D>
+    D: Sized + Decoder,
+    T0: Sized+Decodable<D>,
+    T1: Sized+Decodable<D>,
+    T2: Sized+Decodable<D>
 > Decodable<D> for (T0, T1, T2) {
     fn decode(d: &mut D) -> (T0, T1, T2) {
         do d.read_seq |d, len| {
@@ -586,11 +586,11 @@ impl<
 }
 
 impl<
-    D: Decoder,
-    T0: Decodable<D>,
-    T1: Decodable<D>,
-    T2: Decodable<D>,
-    T3: Decodable<D>
+    D: Sized + Decoder,
+    T0: Sized+Decodable<D>,
+    T1: Sized+Decodable<D>,
+    T2: Sized+Decodable<D>,
+    T3: Sized+Decodable<D>
 > Decodable<D> for (T0, T1, T2, T3) {
     fn decode(d: &mut D) -> (T0, T1, T2, T3) {
         do d.read_seq |d, len| {
@@ -629,12 +629,12 @@ impl<
 }
 
 impl<
-    D: Decoder,
-    T0: Decodable<D>,
-    T1: Decodable<D>,
-    T2: Decodable<D>,
-    T3: Decodable<D>,
-    T4: Decodable<D>
+    D: Sized + Decoder,
+    T0: Sized+Decodable<D>,
+    T1: Sized+Decodable<D>,
+    T2: Sized+Decodable<D>,
+    T3: Sized+Decodable<D>,
+    T4: Sized+Decodable<D>
 > Decodable<D> for (T0, T1, T2, T3, T4) {
     fn decode(d: &mut D) -> (T0, T1, T2, T3, T4) {
         do d.read_seq |d, len| {
@@ -652,7 +652,7 @@ impl<
 
 impl<
     S: Encoder,
-    T: Encodable<S> + Copy
+    T: Sized+Encodable<S> + Copy
 > Encodable<S> for @mut DList<T> {
     fn encode(&self, s: &mut S) {
         do s.emit_seq(self.size) |s| {
@@ -665,7 +665,7 @@ impl<
     }
 }
 
-impl<D:Decoder,T:Decodable<D>> Decodable<D> for @mut DList<T> {
+impl<D:Sized + Decoder,T:Sized+Decodable<D>> Decodable<D> for @mut DList<T> {
     fn decode(d: &mut D) -> @mut DList<T> {
         let list = DList();
         do d.read_seq |d, len| {
@@ -679,7 +679,7 @@ impl<D:Decoder,T:Decodable<D>> Decodable<D> for @mut DList<T> {
 
 impl<
     S: Encoder,
-    T: Encodable<S>
+    T: Sized+Encodable<S>
 > Encodable<S> for Deque<T> {
     fn encode(&self, s: &mut S) {
         do s.emit_seq(self.len()) |s| {
@@ -690,7 +690,7 @@ impl<
     }
 }
 
-impl<D:Decoder,T:Decodable<D>> Decodable<D> for Deque<T> {
+impl<D:Sized + Decoder,T:Sized+Decodable<D>> Decodable<D> for Deque<T> {
     fn decode(d: &mut D) -> Deque<T> {
         let mut deque = Deque::new();
         do d.read_seq |d, len| {
@@ -704,8 +704,8 @@ impl<D:Decoder,T:Decodable<D>> Decodable<D> for Deque<T> {
 
 impl<
     E: Encoder,
-    K: Encodable<E> + Hash + IterBytes + Eq,
-    V: Encodable<E>
+    K: Sized+Encodable<E> + Hash + IterBytes + Eq,
+    V: Sized+Encodable<E>
 > Encodable<E> for HashMap<K, V> {
     fn encode(&self, e: &mut E) {
         do e.emit_map(self.len()) |e| {
@@ -720,9 +720,9 @@ impl<
 }
 
 impl<
-    D: Decoder,
-    K: Decodable<D> + Hash + IterBytes + Eq,
-    V: Decodable<D>
+    D: Sized + Decoder,
+    K: Sized+Decodable<D> + Hash + IterBytes + Eq,
+    V: Sized+Decodable<D>
 > Decodable<D> for HashMap<K, V> {
     fn decode(d: &mut D) -> HashMap<K, V> {
         do d.read_map |d, len| {
@@ -739,7 +739,7 @@ impl<
 
 impl<
     S: Encoder,
-    T: Encodable<S> + Hash + IterBytes + Eq
+    T: Sized+Encodable<S> + Hash + IterBytes + Eq
 > Encodable<S> for HashSet<T> {
     fn encode(&self, s: &mut S) {
         do s.emit_seq(self.len()) |s| {
@@ -753,8 +753,8 @@ impl<
 }
 
 impl<
-    D: Decoder,
-    T: Decodable<D> + Hash + IterBytes + Eq
+    D: Sized + Decoder,
+    T: Sized+Decodable<D> + Hash + IterBytes + Eq
 > Decodable<D> for HashSet<T> {
     fn decode(d: &mut D) -> HashSet<T> {
         do d.read_seq |d, len| {
@@ -769,7 +769,7 @@ impl<
 
 impl<
     E: Encoder,
-    V: Encodable<E>
+    V: Sized+Encodable<E>
 > Encodable<E> for TrieMap<V> {
     fn encode(&self, e: &mut E) {
         do e.emit_map(self.len()) |e| {
@@ -784,8 +784,8 @@ impl<
 }
 
 impl<
-    D: Decoder,
-    V: Decodable<D>
+    D: Sized + Decoder,
+    V: Sized+Decodable<D>
 > Decodable<D> for TrieMap<V> {
     fn decode(d: &mut D) -> TrieMap<V> {
         do d.read_map |d, len| {
@@ -812,7 +812,7 @@ impl<S: Encoder> Encodable<S> for TrieSet {
     }
 }
 
-impl<D: Decoder> Decodable<D> for TrieSet {
+impl<D: Sized + Decoder> Decodable<D> for TrieSet {
     fn decode(d: &mut D) -> TrieSet {
         do d.read_seq |d, len| {
             let mut set = TrieSet::new();
@@ -826,8 +826,8 @@ impl<D: Decoder> Decodable<D> for TrieSet {
 
 impl<
     E: Encoder,
-    K: Encodable<E> + Eq + TotalOrd,
-    V: Encodable<E> + Eq
+    K: Sized+Encodable<E> + Eq + TotalOrd,
+    V: Sized+Encodable<E> + Eq
 > Encodable<E> for TreeMap<K, V> {
     fn encode(&self, e: &mut E) {
         do e.emit_map(self.len()) |e| {
@@ -842,9 +842,9 @@ impl<
 }
 
 impl<
-    D: Decoder,
-    K: Decodable<D> + Eq + TotalOrd,
-    V: Decodable<D> + Eq
+    D: Sized+Decoder,
+    K: Sized+Decodable<D> + Eq + TotalOrd,
+    V: Sized+Decodable<D> + Eq
 > Decodable<D> for TreeMap<K, V> {
     fn decode(d: &mut D) -> TreeMap<K, V> {
         do d.read_map |d, len| {
@@ -861,7 +861,7 @@ impl<
 
 impl<
     S: Encoder,
-    T: Encodable<S> + Eq + TotalOrd
+    T: Sized+Encodable<S> + Eq + TotalOrd
 > Encodable<S> for TreeSet<T> {
     fn encode(&self, s: &mut S) {
         do s.emit_seq(self.len()) |s| {
@@ -875,8 +875,8 @@ impl<
 }
 
 impl<
-    D: Decoder,
-    T: Decodable<D> + Eq + TotalOrd
+    D: Sized+Decoder,
+    T: Sized+Decodable<D> + Eq + TotalOrd
 > Decodable<D> for TreeSet<T> {
     fn decode(d: &mut D) -> TreeSet<T> {
         do d.read_seq |d, len| {
@@ -895,11 +895,11 @@ impl<
 // In some cases, these should eventually be coded as traits.
 
 pub trait EncoderHelpers {
-    fn emit_from_vec<T>(&mut self, v: &[T], f: &fn(&mut Self, v: &T));
+    fn emit_from_vec<T: Sized>(&mut self, v: &[T], f: &fn(&mut Self, v: &T));
 }
 
 impl<S:Encoder> EncoderHelpers for S {
-    fn emit_from_vec<T>(&mut self, v: &[T], f: &fn(&mut S, &T)) {
+    fn emit_from_vec<T: Sized>(&mut self, v: &[T], f: &fn(&mut S, &T)) {
         do self.emit_seq(v.len()) |this| {
             for v.eachi |i, e| {
                 do this.emit_seq_elt(i) |this| {
@@ -911,11 +911,11 @@ impl<S:Encoder> EncoderHelpers for S {
 }
 
 pub trait DecoderHelpers {
-    fn read_to_vec<T>(&mut self, f: &fn(&mut Self) -> T) -> ~[T];
+    fn read_to_vec<T: Sized>(&mut self, f: &fn(&mut Self) -> T) -> ~[T];
 }
 
-impl<D:Decoder> DecoderHelpers for D {
-    fn read_to_vec<T>(&mut self, f: &fn(&mut D) -> T) -> ~[T] {
+impl<D:Sized + Decoder> DecoderHelpers for D {
+    fn read_to_vec<T: Sized>(&mut self, f: &fn(&mut D) -> T) -> ~[T] {
         do self.read_seq |this, len| {
             do vec::from_fn(len) |i| {
                 this.read_seq_elt(i, |this| f(this))

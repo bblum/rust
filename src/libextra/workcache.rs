@@ -153,7 +153,7 @@ impl<S:Encoder> Encodable<S> for WorkMap {
     }
 }
 
-impl<D:Decoder> Decodable<D> for WorkMap {
+impl<D:Sized + Decoder> Decodable<D> for WorkMap {
     fn decode(d: &mut D) -> WorkMap {
         let v : ~[(WorkKey,~str)] = Decodable::decode(d);
         let mut w = WorkMap::new();
@@ -239,7 +239,7 @@ fn json_encode<T:Encodable<json::Encoder>>(t: &T) -> ~str {
 }
 
 // FIXME(#5121)
-fn json_decode<T:Decodable<json::Decoder>>(s: &str) -> T {
+fn json_decode<T:Sized+Decodable<json::Decoder>>(s: &str) -> T {
     do io::with_str_reader(s) |rdr| {
         let j = result::unwrap(json::from_reader(rdr));
         let mut decoder = json::Decoder(j);
@@ -271,7 +271,7 @@ impl Context {
         }
     }
 
-    pub fn prep<T:Owned +
+    pub fn prep<T:Sized + Owned +
                   Encodable<json::Encoder> +
                   Decodable<json::Decoder>>(@self, // FIXME(#5121)
                                             fn_name:&str,
@@ -291,7 +291,7 @@ trait TPrep {
     fn declare_input(&mut self, kind:&str, name:&str, val:&str);
     fn is_fresh(&self, cat:&str, kind:&str, name:&str, val:&str) -> bool;
     fn all_fresh(&self, cat:&str, map:&WorkMap) -> bool;
-    fn exec<T:Owned +
+    fn exec<T:Sized + Owned +
               Encodable<json::Encoder> +
               Decodable<json::Decoder>>( // FIXME(#5121)
         &self, blk: ~fn(&Exec) -> T) -> Work<T>;
@@ -327,7 +327,7 @@ impl TPrep for Prep {
         return true;
     }
 
-    fn exec<T:Owned +
+    fn exec<T:Sized + Owned +
               Encodable<json::Encoder> +
               Decodable<json::Decoder>>( // FIXME(#5121)
             &self, blk: ~fn(&Exec) -> T) -> Work<T> {
@@ -364,7 +364,7 @@ impl TPrep for Prep {
     }
 }
 
-impl<T:Owned +
+impl<T:Sized + Owned +
        Encodable<json::Encoder> +
        Decodable<json::Decoder>> Work<T> { // FIXME(#5121)
     pub fn new(p: @mut Prep, e: Either<T,PortOne<(Exec,T)>>) -> Work<T> {
@@ -373,7 +373,7 @@ impl<T:Owned +
 }
 
 // FIXME (#3724): movable self. This should be in impl Work.
-fn unwrap<T:Owned +
+fn unwrap<T:Sized + Owned +
             Encodable<json::Encoder> +
             Decodable<json::Decoder>>( // FIXME(#5121)
         w: Work<T>) -> T {
