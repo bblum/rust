@@ -420,7 +420,7 @@ pub enum MapChain<K,V> {
 
 
 // get the map from an env frame
-impl <K: Eq + Hash + IterBytes ,V: Copy> MapChain<K,V>{
+impl <K: Sized + Eq + Hash + IterBytes ,V: Sized + Copy> MapChain<K,V>{
 
     // Constructor. I don't think we need a zero-arg one.
     fn new(init: ~HashMap<K,@V>) -> @mut MapChain<K,V> {
@@ -522,7 +522,7 @@ impl <K: Eq + Hash + IterBytes ,V: Copy> MapChain<K,V>{
 }
 
 // returns true if the binding for 'n' satisfies 'pred' in 'map'
-fn satisfies_pred<K : Eq + Hash + IterBytes,V>(map : &mut HashMap<K,V>,
+fn satisfies_pred<K: Sized + Eq + Hash + IterBytes,V: Sized>(map : &mut HashMap<K,V>,
                                                n: &K,
                                                pred: &fn(&V)->bool)
     -> bool {

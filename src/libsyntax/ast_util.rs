@@ -301,7 +301,7 @@ pub fn struct_field_visibility(field: ast::struct_field) -> visibility {
 pub trait inlined_item_utils {
     fn ident(&self) -> ident;
     fn id(&self) -> ast::node_id;
-    fn accept<E: Copy>(&self, e: E, v: visit::vt<E>);
+    fn accept<E: Sized + Copy>(&self, e: E, v: visit::vt<E>);
 }
 
 impl inlined_item_utils for inlined_item {
@@ -321,7 +321,7 @@ impl inlined_item_utils for inlined_item {
         }
     }
 
-    fn accept<E: Copy>(&self, e: E, v: visit::vt<E>) {
+    fn accept<E: Sized + Copy>(&self, e: E, v: visit::vt<E>) {
         match *self {
             ii_item(i) => (v.visit_item)(i, e, v),
             ii_foreign(i) => (v.visit_foreign_item)(i, e, v),
@@ -393,7 +393,7 @@ impl id_range {
     }
 }
 
-pub fn id_visitor<T: Copy>(vfn: @fn(node_id, T)) -> visit::vt<T> {
+pub fn id_visitor<T: Sized + Copy>(vfn: @fn(node_id, T)) -> visit::vt<T> {
     let visit_generics: @fn(&Generics, T) = |generics, t| {
         for generics.ty_params.each |p| {
             vfn(p.id, t);
@@ -709,7 +709,7 @@ pub fn get_sctable() -> @mut SCTable {
 }
 
 /// Add a value to the end of a vec, return its index
-fn idx_push<T>(vec: &mut ~[T], val: T) -> uint {
+fn idx_push<T: Sized>(vec: &mut ~[T], val: T) -> uint {
     vec.push(val);
     vec.len() - 1
 }

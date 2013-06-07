@@ -319,7 +319,7 @@ pub fn synth_comment(s: @ps, text: ~str) {
     word(s.s, "*/");
 }
 
-pub fn commasep<IN: Copy>(s: @ps, b: breaks, elts: &[IN], op: &fn(@ps, IN)) {
+pub fn commasep<IN: Sized + Copy>(s: @ps, b: breaks, elts: &[IN], op: &fn(@ps, IN)) {
     box(s, 0u, b);
     let mut first = true;
     for elts.each |elt| {
@@ -330,7 +330,7 @@ pub fn commasep<IN: Copy>(s: @ps, b: breaks, elts: &[IN], op: &fn(@ps, IN)) {
 }
 
 
-pub fn commasep_cmnt<IN: Copy>(s: @ps, b: breaks, elts: &[IN], op: &fn(@ps, IN),
+pub fn commasep_cmnt<IN: Sized + Copy>(s: @ps, b: breaks, elts: &[IN], op: &fn(@ps, IN),
                                get_span: &fn(IN) -> codemap::span) {
     box(s, 0u, b);
     let len = elts.len();
@@ -2117,7 +2117,7 @@ pub fn print_string(s: @ps, st: &str) {
     word(s.s, "\"");
 }
 
-pub fn to_str<T: Copy>(t: T, f: @fn(@ps, T), intr: @ident_interner) -> ~str {
+pub fn to_str<T: Sized + Copy>(t: T, f: @fn(@ps, T), intr: @ident_interner) -> ~str {
     do io::with_str_writer |wr| {
         let s = rust_printer(wr, intr);
         f(s, t);

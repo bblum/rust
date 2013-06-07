@@ -24,6 +24,7 @@ use core::io;
 use core::option::{None, Option, Some};
 use core::path::Path;
 use core::result::{Err, Ok};
+use core::kinds::Sized;
 
 pub mod lexer;
 pub mod parser;
@@ -180,7 +181,7 @@ pub fn parse_tts_from_source_str(
 // apply the function, and check that the parser
 // consumed all of the input before returning the function's
 // result.
-pub fn parse_from_source_str<T>(
+pub fn parse_from_source_str<T: Sized>(
     f: &fn(&Parser) -> T,
     name: ~str, ss: codemap::FileSubstr,
     source: @~str,
@@ -323,7 +324,7 @@ pub fn tts_to_parser(sess: @mut ParseSess,
 }
 
 // abort if necessary
-pub fn maybe_aborted<T>(result : T, p: Parser) -> T {
+pub fn maybe_aborted<T: Sized>(result : T, p: Parser) -> T {
     p.abort_if_errors();
     result
 }

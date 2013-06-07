@@ -392,7 +392,7 @@ pub fn node_id_to_str(map: map, id: node_id, itr: @ident_interner) -> ~str {
     }
 }
 
-pub fn node_item_query<Result>(items: map, id: node_id,
+pub fn node_item_query<Result: Sized>(items: map, id: node_id,
                                query: &fn(@item) -> Result,
                                error_msg: ~str) -> Result {
     match items.find(&id) {

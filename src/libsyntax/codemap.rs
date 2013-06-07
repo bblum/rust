@@ -149,15 +149,15 @@ impl to_bytes::IterBytes for span {
     }
 }
 
-pub fn spanned<T>(lo: BytePos, hi: BytePos, t: T) -> spanned<T> {
+pub fn spanned<T: Sized>(lo: BytePos, hi: BytePos, t: T) -> spanned<T> {
     respan(mk_sp(lo, hi), t)
 }
 
-pub fn respan<T>(sp: span, t: T) -> spanned<T> {
+pub fn respan<T: Sized>(sp: span, t: T) -> spanned<T> {
     spanned {node: t, span: sp}
 }
 
-pub fn dummy_spanned<T>(t: T) -> spanned<T> {
+pub fn dummy_spanned<T: Sized>(t: T) -> spanned<T> {
     respan(dummy_sp(), t)
 }
 

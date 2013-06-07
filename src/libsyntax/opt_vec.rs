@@ -27,11 +27,11 @@ pub enum OptVec<T> {
     Vec(~[T])
 }
 
-pub fn with<T>(t: T) -> OptVec<T> {
+pub fn with<T:Sized>(t: T) -> OptVec<T> {
     Vec(~[t])
 }
 
-pub fn from<T>(t: ~[T]) -> OptVec<T> {
+pub fn from<T:Sized>(t: ~[T]) -> OptVec<T> {
     if t.len() == 0 {
         Empty
     } else {
@@ -39,7 +39,7 @@ pub fn from<T>(t: ~[T]) -> OptVec<T> {
     }
 }
 
-impl<T> OptVec<T> {
+impl<T:Sized> OptVec<T> {
     fn push(&mut self, t: T) {
         match *self {
             Vec(ref mut v) => {
@@ -54,7 +54,7 @@ impl<T> OptVec<T> {
         *self = Vec(~[t]);
     }
 
-    fn map<U>(&self, op: &fn(&T) -> U) -> OptVec<U> {
+    fn map<U: Sized>(&self, op: &fn(&T) -> U) -> OptVec<U> {
         match *self {
             Empty => Empty,
             Vec(ref v) => Vec(v.map(op))
@@ -80,14 +80,14 @@ impl<T> OptVec<T> {
     }
 }
 
-pub fn take_vec<T>(v: OptVec<T>) -> ~[T] {
+pub fn take_vec<T:Sized>(v: OptVec<T>) -> ~[T] {
     match v {
         Empty => ~[],
         Vec(v) => v
     }
 }
 
-impl<T:Copy> OptVec<T> {
+impl<T:Sized + Copy> OptVec<T> {
     fn prepend(&self, t: T) -> OptVec<T> {
         let mut v0 = ~[t];
         match *self {
@@ -104,7 +104,7 @@ impl<T:Copy> OptVec<T> {
     }
 
     #[inline(always)]
-    fn mapi_to_vec<B>(&self, op: &fn(uint, &T) -> B) -> ~[B] {
+    fn mapi_to_vec<B: Sized>(&self, op: &fn(uint, &T) -> B) -> ~[B] {
         let mut index = 0;
         old_iter::map_to_vec(self, |a| {
             let i = index;
@@ -114,7 +114,7 @@ impl<T:Copy> OptVec<T> {
     }
 }
 
-impl<A:Eq> Eq for OptVec<A> {
+impl<A:Sized + Eq> Eq for OptVec<A> {
     fn eq(&self, other: &OptVec<A>) -> bool {
         // Note: cannot use #[deriving(Eq)] here because
         // (Empty, Vec(~[])) ought to be equal.
@@ -131,7 +131,7 @@ impl<A:Eq> Eq for OptVec<A> {
     }
 }
 
-impl<A> BaseIter<A> for OptVec<A> {
+impl<A:Sized> BaseIter<A> for OptVec<A> {
     fn each(&self, blk: &fn(v: &A) -> bool) -> bool {
         match *self {
             Empty => true,
@@ -144,7 +144,7 @@ impl<A> BaseIter<A> for OptVec<A> {
     }
 }
 
-impl<A> old_iter::ExtendedIter<A> for OptVec<A> {
+impl<A:Sized> old_iter::ExtendedIter<A> for OptVec<A> {
     #[inline(always)]
     fn eachi(&self, blk: &fn(v: uint, v: &A) -> bool) -> bool {
         old_iter::eachi(self, blk)
@@ -158,7 +158,7 @@ impl<A> old_iter::ExtendedIter<A> for OptVec<A> {
         old_iter::any(self, blk)
     }
     #[inline(always)]
-    fn foldl<B>(&self, b0: B, blk: &fn(&B, &A) -> B) -> B {
+    fn foldl<B: Sized>(&self, b0: B, blk: &fn(&B, &A) -> B) -> B {
         old_iter::foldl(self, b0, blk)
     }
     #[inline(always)]
@@ -166,25 +166,25 @@ impl<A> old_iter::ExtendedIter<A> for OptVec<A> {
         old_iter::position(self, f)
     }
     #[inline(always)]
-    fn map_to_vec<B>(&self, op: &fn(&A) -> B) -> ~[B] {
+    fn map_to_vec<B: Sized>(&self, op: &fn(&A) -> B) -> ~[B] {
         old_iter::map_to_vec(self, op)
     }
     #[inline(always)]
-    fn flat_map_to_vec<B,IB:BaseIter<B>>(&self, op: &fn(&A) -> IB)
+    fn flat_map_to_vec<B: Sized,IB: Sized + BaseIter<B>>(&self, op: &fn(&A) -> IB)
         -> ~[B] {
         old_iter::flat_map_to_vec(self, op)
     }
 
 }
 
-impl<A: Eq> old_iter::EqIter<A> for OptVec<A> {
+impl<A: Sized + Eq> old_iter::EqIter<A> for OptVec<A> {
     #[inline(always)]
     fn contains(&self, x: &A) -> bool { old_iter::contains(self, x) }
     #[inline(always)]
     fn count(&self, x: &A) -> uint { old_iter::count(self, x) }
 }
 
-impl<A: Copy> old_iter::CopyableIter<A> for OptVec<A> {
+impl<A: Sized + Copy> old_iter::CopyableIter<A> for OptVec<A> {
     #[inline(always)]
     fn filter_to_vec(&self, pred: &fn(&A) -> bool) -> ~[A] {
         old_iter::filter_to_vec(self, pred)
@@ -197,7 +197,7 @@ impl<A: Copy> old_iter::CopyableIter<A> for OptVec<A> {
     }
 }
 
-impl<A: Copy+Ord> old_iter::CopyableOrderedIter<A> for OptVec<A> {
+impl<A: Sized + Copy + Ord> old_iter::CopyableOrderedIter<A> for OptVec<A> {
     #[inline(always)]
     fn min(&self) -> A { old_iter::min(self) }
     #[inline(always)]

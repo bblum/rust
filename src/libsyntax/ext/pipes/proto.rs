@@ -212,7 +212,7 @@ pub trait visitor<Tproto, Tstate, Tmessage> {
                      this: state, next: Option<next_state>) -> Tmessage;
 }
 
-pub fn visit<Tproto, Tstate, Tmessage, V: visitor<Tproto, Tstate, Tmessage>>(
+pub fn visit<Tproto: Sized, Tstate: Sized, Tmessage: Sized, V: Sized + visitor<Tproto, Tstate, Tmessage>>(
     proto: protocol, visitor: V) -> Tproto {
 
     // the copy keywords prevent recursive use of dvec

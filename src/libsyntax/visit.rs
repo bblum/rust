@@ -97,7 +97,7 @@ pub struct Visitor<E> {
 
 pub type visitor<E> = @Visitor<E>;
 
-pub fn default_visitor<E: Copy>() -> visitor<E> {
+pub fn default_visitor<E: Sized + Copy>() -> visitor<E> {
     return @Visitor {
         visit_mod: |a,b,c,d,e|visit_mod::<E>(a, b, c, d, e),
         visit_view_item: |a,b,c|visit_view_item::<E>(a, b, c),
@@ -123,18 +123,18 @@ pub fn default_visitor<E: Copy>() -> visitor<E> {
     };
 }
 
-pub fn visit_crate<E: Copy>(c: &crate, e: E, v: vt<E>) {
+pub fn visit_crate<E: Sized + Copy>(c: &crate, e: E, v: vt<E>) {
     (v.visit_mod)(&c.node.module, c.span, crate_node_id, e, v);
 }
 
-pub fn visit_mod<E: Copy>(m: &_mod, _sp: span, _id: node_id, e: E, v: vt<E>) {
+pub fn visit_mod<E: Sized + Copy>(m: &_mod, _sp: span, _id: node_id, e: E, v: vt<E>) {
     for m.view_items.each |vi| { (v.visit_view_item)(*vi, e, v); }
     for m.items.each |i| { (v.visit_item)(*i, e, v); }
 }
 
-pub fn visit_view_item<E>(_vi: @view_item, _e: E, _v: vt<E>) { }
+pub fn visit_view_item<E: Sized>(_vi: @view_item, _e: E, _v: vt<E>) { }
 
-pub fn visit_local<E: Copy>(loc: @local, e: E, v: vt<E>) {
+pub fn visit_local<E: Sized + Copy>(loc: @local, e: E, v: vt<E>) {
     (v.visit_pat)(loc.node.pat, e, v);
     (v.visit_ty)(loc.node.ty, e, v);
     match loc.node.init {
@@ -143,11 +143,11 @@ pub fn visit_local<E: Copy>(loc: @local, e: E, v: vt<E>) {
     }
 }
 
-fn visit_trait_ref<E: Copy>(tref: @ast::trait_ref, e: E, v: vt<E>) {
+fn visit_trait_ref<E: Sized + Copy>(tref: @ast::trait_ref, e: E, v: vt<E>) {
     visit_path(tref.path, e, v);
 }
 
-pub fn visit_item<E: Copy>(i: @item, e: E, v: vt<E>) {
+pub fn visit_item<E: Sized + Copy>(i: @item, e: E, v: vt<E>) {
     match i.node {
         item_const(t, ex) => {
             (v.visit_ty)(t, e, v);
@@ -212,7 +212,7 @@ pub fn visit_item<E: Copy>(i: @item, e: E, v: vt<E>) {
     }
 }
 
-pub fn visit_enum_def<E: Copy>(enum_definition: &ast::enum_def,
+pub fn visit_enum_def<E: Sized + Copy>(enum_definition: &ast::enum_def,
                                tps: &Generics,
                                e: E,
                                v: vt<E>) {
@@ -231,9 +231,9 @@ pub fn visit_enum_def<E: Copy>(enum_definition: &ast::enum_def,
     }
 }
 
-pub fn skip_ty<E>(_t: @Ty, _e: E, _v: vt<E>) {}
+pub fn skip_ty<E: Sized>(_t: @Ty, _e: E, _v: vt<E>) {}
 
-pub fn visit_ty<E: Copy>(t: @Ty, e: E, v: vt<E>) {
+pub fn visit_ty<E: Sized + Copy>(t: @Ty, e: E, v: vt<E>) {
     match t.node {
         ty_box(mt) | ty_uniq(mt) |
         ty_vec(mt) | ty_ptr(mt) | ty_rptr(_, mt) => {
@@ -261,11 +261,11 @@ pub fn visit_ty<E: Copy>(t: @Ty, e: E, v: vt<E>) {
     }
 }
 
-pub fn visit_path<E: Copy>(p: @Path, e: E, v: vt<E>) {
+pub fn visit_path<E: Sized + Copy>(p: @Path, e: E, v: vt<E>) {
     for p.types.each |tp| { (v.visit_ty)(*tp, e, v); }
 }
 
-pub fn visit_pat<E: Copy>(p: @pat, e: E, v: vt<E>) {
+pub fn visit_pat<E: Sized + Copy>(p: @pat, e: E, v: vt<E>) {
     match p.node {
         pat_enum(path, ref children) => {
             visit_path(path, e, v);
@@ -311,7 +311,7 @@ pub fn visit_pat<E: Copy>(p: @pat, e: E, v: vt<E>) {
     }
 }
 
-pub fn visit_foreign_item<E: Copy>(ni: @foreign_item, e: E, v: vt<E>) {
+pub fn visit_foreign_item<E: Sized + Copy>(ni: @foreign_item, e: E, v: vt<E>) {
     match ni.node {
         foreign_item_fn(ref fd, _, ref generics) => {
             visit_fn_decl(fd, e, v);
@@ -323,7 +323,7 @@ pub fn visit_foreign_item<E: Copy>(ni: @foreign_item, e: E, v: vt<E>) {
     }
 }
 
-pub fn visit_ty_param_bounds<E: Copy>(bounds: @OptVec<TyParamBound>,
+pub fn visit_ty_param_bounds<E: Sized + Copy>(bounds: @OptVec<TyParamBound>,
                                       e: E, v: vt<E>) {
     for bounds.each |bound| {
         match *bound {
@@ -333,13 +333,13 @@ pub fn visit_ty_param_bounds<E: Copy>(bounds: @OptVec<TyParamBound>,
     }
 }
 
-pub fn visit_generics<E: Copy>(generics: &Generics, e: E, v: vt<E>) {
+pub fn visit_generics<E: Sized + Copy>(generics: &Generics, e: E, v: vt<E>) {
     for generics.ty_params.each |tp| {
         visit_ty_param_bounds(tp.bounds, e, v);
     }
 }
 
-pub fn visit_fn_decl<E: Copy>(fd: &fn_decl, e: E, v: vt<E>) {
+pub fn visit_fn_decl<E: Sized + Copy>(fd: &fn_decl, e: E, v: vt<E>) {
     for fd.inputs.each |a| {
         (v.visit_pat)(a.pat, e, v);
         (v.visit_ty)(a.ty, e, v);
@@ -351,7 +351,7 @@ pub fn visit_fn_decl<E: Copy>(fd: &fn_decl, e: E, v: vt<E>) {
 // visit_fn() and check for fk_method().  I named this visit_method_helper()
 // because it is not a default impl of any method, though I doubt that really
 // clarifies anything. - Niko
-pub fn visit_method_helper<E: Copy>(m: &method, e: E, v: vt<E>) {
+pub fn visit_method_helper<E: Sized + Copy>(m: &method, e: E, v: vt<E>) {
     (v.visit_fn)(
         &fk_method(
             /* FIXME (#2543) */ copy m.ident,
@@ -367,7 +367,7 @@ pub fn visit_method_helper<E: Copy>(m: &method, e: E, v: vt<E>) {
     );
 }
 
-pub fn visit_fn<E: Copy>(fk: &fn_kind, decl: &fn_decl, body: &blk, _sp: span,
+pub fn visit_fn<E: Sized + Copy>(fk: &fn_kind, decl: &fn_decl, body: &blk, _sp: span,
                          _id: node_id, e: E, v: vt<E>) {
     visit_fn_decl(decl, e, v);
     let generics = generics_of_fn(fk);
@@ -375,20 +375,20 @@ pub fn visit_fn<E: Copy>(fk: &fn_kind, decl: &fn_decl, body: &blk, _sp: span,
     (v.visit_block)(body, e, v);
 }
 
-pub fn visit_ty_method<E: Copy>(m: &ty_method, e: E, v: vt<E>) {
+pub fn visit_ty_method<E: Sized + Copy>(m: &ty_method, e: E, v: vt<E>) {
     for m.decl.inputs.each |a| { (v.visit_ty)(a.ty, e, v); }
     (v.visit_generics)(&m.generics, e, v);
     (v.visit_ty)(m.decl.output, e, v);
 }
 
-pub fn visit_trait_method<E: Copy>(m: &trait_method, e: E, v: vt<E>) {
+pub fn visit_trait_method<E: Sized + Copy>(m: &trait_method, e: E, v: vt<E>) {
     match *m {
       required(ref ty_m) => (v.visit_ty_method)(ty_m, e, v),
       provided(m) => visit_method_helper(m, e, v)
     }
 }
 
-pub fn visit_struct_def<E: Copy>(
+pub fn visit_struct_def<E: Sized + Copy>(
     sd: @struct_def,
     _nm: ast::ident,
     _generics: &Generics,
@@ -401,15 +401,15 @@ pub fn visit_struct_def<E: Copy>(
     }
 }
 
-pub fn visit_struct_field<E: Copy>(sf: @struct_field, e: E, v: vt<E>) {
+pub fn visit_struct_field<E: Sized + Copy>(sf: @struct_field, e: E, v: vt<E>) {
     (v.visit_ty)(sf.node.ty, e, v);
 }
 
-pub fn visit_struct_method<E: Copy>(m: @method, e: E, v: vt<E>) {
+pub fn visit_struct_method<E: Sized + Copy>(m: @method, e: E, v: vt<E>) {
     visit_method_helper(m, e, v);
 }
 
-pub fn visit_block<E: Copy>(b: &blk, e: E, v: vt<E>) {
+pub fn visit_block<E: Sized + Copy>(b: &blk, e: E, v: vt<E>) {
     for b.node.view_items.each |vi| {
         (v.visit_view_item)(*vi, e, v);
     }
@@ -419,7 +419,7 @@ pub fn visit_block<E: Copy>(b: &blk, e: E, v: vt<E>) {
     visit_expr_opt(b.node.expr, e, v);
 }
 
-pub fn visit_stmt<E>(s: @stmt, e: E, v: vt<E>) {
+pub fn visit_stmt<E: Sized>(s: @stmt, e: E, v: vt<E>) {
     match s.node {
       stmt_decl(d, _) => (v.visit_decl)(d, e, v),
       stmt_expr(ex, _) => (v.visit_expr)(ex, e, v),
@@ -428,26 +428,26 @@ pub fn visit_stmt<E>(s: @stmt, e: E, v: vt<E>) {
     }
 }
 
-pub fn visit_decl<E: Copy>(d: @decl, e: E, v: vt<E>) {
+pub fn visit_decl<E: Sized + Copy>(d: @decl, e: E, v: vt<E>) {
     match d.node {
         decl_local(ref loc) => (v.visit_local)(*loc, e, v),
         decl_item(it) => (v.visit_item)(it, e, v)
     }
 }
 
-pub fn visit_expr_opt<E>(eo: Option<@expr>, e: E, v: vt<E>) {
+pub fn visit_expr_opt<E: Sized>(eo: Option<@expr>, e: E, v: vt<E>) {
     match eo { None => (), Some(ex) => (v.visit_expr)(ex, e, v) }
 }
 
-pub fn visit_exprs<E: Copy>(exprs: &[@expr], e: E, v: vt<E>) {
+pub fn visit_exprs<E: Sized + Copy>(exprs: &[@expr], e: E, v: vt<E>) {
     for exprs.each |ex| { (v.visit_expr)(*ex, e, v); }
 }
 
-pub fn visit_mac<E>(_m: &mac, _e: E, _v: vt<E>) {
+pub fn visit_mac<E: Sized>(_m: &mac, _e: E, _v: vt<E>) {
     /* no user-serviceable parts inside */
 }
 
-pub fn visit_expr<E: Copy>(ex: @expr, e: E, v: vt<E>) {
+pub fn visit_expr<E: Sized + Copy>(ex: @expr, e: E, v: vt<E>) {
     match ex.node {
         expr_vstore(x, _) => (v.visit_expr)(x, e, v),
         expr_vec(ref es, _) => visit_exprs(*es, e, v),
@@ -549,7 +549,7 @@ pub fn visit_expr<E: Copy>(ex: @expr, e: E, v: vt<E>) {
     (v.visit_expr_post)(ex, e, v);
 }
 
-pub fn visit_arm<E: Copy>(a: &arm, e: E, v: vt<E>) {
+pub fn visit_arm<E: Sized + Copy>(a: &arm, e: E, v: vt<E>) {
     for a.pats.each |p| { (v.visit_pat)(*p, e, v); }
     visit_expr_opt(a.guard, e, v);
     (v.visit_block)(&a.body, e, v);

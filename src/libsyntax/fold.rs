@@ -440,7 +440,7 @@ fn noop_fold_decl(d: &decl_, fld: @ast_fold) -> Option<decl_> {
     }
 }
 
-pub fn wrap<T>(f: @fn(&T, @ast_fold) -> T)
+pub fn wrap<T: Sized>(f: @fn(&T, @ast_fold) -> T)
             -> @fn(&T, span, @ast_fold) -> (T, span) {
     let result: @fn(&T, span, @ast_fold) -> (T, span) = |x, s, fld| {
         (f(x, fld), s)
