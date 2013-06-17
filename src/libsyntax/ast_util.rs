@@ -473,7 +473,8 @@ pub fn id_visitor<T: Copy>(vfn: @fn(node_id, T)) -> visit::vt<T> {
 
         visit_ty: |ty, (t, vt)| {
             match ty.node {
-              ty_path(_, id) => vfn(id, copy t),
+              // TODO(bblum): what about bounds (closures and traits both)
+              ty_path(_, _bounds, id) => vfn(id, copy t),
               _ => { /* fall through */ }
             }
             visit::visit_ty(ty, (t, vt));

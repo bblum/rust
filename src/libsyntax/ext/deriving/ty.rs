@@ -64,8 +64,9 @@ impl<'self> Path<'self> {
                  self_ty: ident,
                  self_generics: &Generics)
                  -> @ast::Ty {
+        // TODO(bblum) is this (empty) right?
         cx.ty_path(self.to_path(cx, span,
-                                self_ty, self_generics))
+                                self_ty, self_generics), @opt_vec::Empty)
     }
     pub fn to_path(&self,
                    cx: @ExtCtxt,
@@ -144,7 +145,9 @@ impl<'self> Ty<'self> {
             }
             Literal(ref p) => { p.to_ty(cx, span, self_ty, self_generics) }
             Self  => {
-                cx.ty_path(self.to_path(cx, span, self_ty, self_generics))
+                // TODO(bblum) is this right?
+                cx.ty_path(self.to_path(cx, span, self_ty, self_generics),
+                           @opt_vec::Empty)
             }
             Tuple(ref fields) => {
                 let ty = if fields.is_empty() {
