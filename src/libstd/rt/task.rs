@@ -20,6 +20,7 @@ use libc::{c_void, uintptr_t};
 use ptr;
 use prelude::*;
 use option::{Option, Some, None};
+use rt::kill::KillHandle;
 use rt::local::Local;
 use rt::logging::StdErrLogger;
 use super::local_heap::LocalHeap;
@@ -36,7 +37,11 @@ pub struct Task {
     logger: StdErrLogger,
     unwinder: Unwinder,
     home: Option<SchedHome>,
-    join_latch: Option<~JoinLatch>,
+    // this is optional so we can take it by-value at exit time
+    kill_handle:     Option<KillHandle>,
+    // this is optional because it might not exist
+    watching_parent: Option<KillHandle>,
+    join_latch: Option<~JoinLatch>, // FIXME(#7544) remove
     on_exit: Option<~fn(bool)>,
     destroyed: bool,
     coroutine: Option<~Coroutine>
@@ -86,6 +91,8 @@ impl Task {
             logger: StdErrLogger,
             unwinder: Unwinder { unwinding: false },
             home: Some(home),
+            kill_handle: Some(KillHandle::new()),
+            watching_parent: None,
             join_latch: Some(JoinLatch::new_root()),
             on_exit: None,
             destroyed: false,
@@ -103,6 +110,9 @@ impl Task {
             storage: LocalStorage(ptr::null(), None),
             logger: StdErrLogger,
             home: Some(home),
+            kill_handle: Some(KillHandle::new()),
+            // FIXME(#7544) make this optional
+            watching_parent: self.kill_handle.clone(),
             unwinder: Unwinder { unwinding: false },
             join_latch: Some(self.join_latch.get_mut_ref().new_child()),
             on_exit: None,
@@ -123,20 +133,45 @@ impl Task {
         }
 
         self.unwinder.try(f);
+        self.collect_failure(!self.unwinder.unwinding);
         self.destroy();
+    }
 
-        // Wait for children. Possibly report the exit status.
-        let local_success = !self.unwinder.unwinding;
-        let join_latch = self.join_latch.swap_unwrap();
-        match self.on_exit {
-            Some(ref on_exit) => {
-                let success = join_latch.wait(local_success);
-                (*on_exit)(success);
+    // Collect failure exit codes from children and propagate them to a parent.
+    pub fn collect_failure(&mut self, mut success: bool) {
+        // Step 1. Decide if we need to collect child failures synchronously.
+        do self.on_exit.swap_map |on_exit| {
+            if success {
+                // We succeeded, but our children might not. Need to wait for them.
+                let mut inner = unsafe { self.kill_handle.swap_unwrap().unwrap(false) };
+                if inner.any_child_failed {
+                    success = false;
+                } else {
+                    // Lockless access to tombstones protected by unwrap barrier.
+                    success = inner.child_tombstones.swap_map_default(true, |f| f());
+                }
             }
-            None => {
-                join_latch.release(local_success);
+            on_exit(success);
+        };
+
+        // Step 2. Possibly alert possibly-watching parent to failure status.
+        // Note that as soon as parent_handle goes out of scope, the parent
+        // can successfully unwrap its handle and collect our reported status.
+        do self.watching_parent.swap_map |mut parent_handle| {
+            if success {
+                // Our handle might be None if we had an exit callback, and
+                // already unwrapped it. But 'success' being true means no
+                // child failed, so there's nothing to do (see below case).
+                do self.kill_handle.swap_map |own_handle| {
+                    own_handle.reparent_children_to(&mut parent_handle);
+                };
+            } else {
+                // Can inform watching parent immediately that we failed.
+                // (Note the importance of non-failing tasks NOT writing
+                // 'false', which could obscure another task's failure.)
+                parent_handle.notify_immediate_failure();
             }
-        }
+        };
     }
 
     /// must be called manually before finalization to clean up
