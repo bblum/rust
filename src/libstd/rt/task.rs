@@ -25,7 +25,6 @@ use rt::local::Local;
 use rt::logging::StdErrLogger;
 use super::local_heap::LocalHeap;
 use rt::sched::{Scheduler, SchedHandle};
-use rt::join_latch::JoinLatch;
 use rt::stack::{StackSegment, StackPool};
 use rt::context::Context;
 use cell::Cell;
@@ -41,7 +40,6 @@ pub struct Task {
     kill_handle:     Option<KillHandle>,
     // this is optional because it might not exist
     watching_parent: Option<KillHandle>,
-    join_latch: Option<~JoinLatch>, // FIXME(#7544) remove
     on_exit: Option<~fn(bool)>,
     destroyed: bool,
     coroutine: Option<~Coroutine>
@@ -93,7 +91,6 @@ impl Task {
             home: Some(home),
             kill_handle: Some(KillHandle::new()),
             watching_parent: None,
-            join_latch: Some(JoinLatch::new_root()),
             on_exit: None,
             destroyed: false,
             coroutine: Some(~Coroutine::new(stack_pool, start))
@@ -114,7 +111,6 @@ impl Task {
             // FIXME(#7544) make this optional
             watching_parent: self.kill_handle.clone(),
             unwinder: Unwinder { unwinding: false },
-            join_latch: Some(self.join_latch.get_mut_ref().new_child()),
             on_exit: None,
             destroyed: false,
             coroutine: Some(~Coroutine::new(stack_pool, start))
