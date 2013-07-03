@@ -230,9 +230,9 @@ impl<T> Drop for UnsafeAtomicRcBox<T>{
 /****************************************************************************/
 
 #[allow(non_camel_case_types)] // runtime type
-pub type rust_little_lock = *libc::c_void;
+type rust_little_lock = *libc::c_void;
 
-struct LittleLock {
+pub struct LittleLock {
     l: rust_little_lock,
 }
 
@@ -244,7 +244,7 @@ impl Drop for LittleLock {
     }
 }
 
-fn LittleLock() -> LittleLock {
+pub fn LittleLock() -> LittleLock {
     unsafe {
         LittleLock {
             l: rust_create_little_lock()
