@@ -14,21 +14,88 @@ use cell::Cell;
 use option::{Option, Some, None};
 use ptr;
 use prelude::*;
+use unstable::atomics::AtomicOption;
 use unstable::sync::{UnsafeAtomicRcBox, LittleLock};
 use util;
 
-// State shared between tasks used for task killing during linked failure.
+// Possible states:
+// 1: running			(killed = false; unkillable = false; blocked_ptr = 0)
+// 2: kill pending		(killed = TRUE;  unkillable = false; blocked_ptr = 0)
+// 3: unkillable		(killed = false; unkillable = TRUE;  blocked_ptr = 0)
+// 4: unkillable + kill pend	(killed = TRUE;  unkillable = TRUE;  blocked_ptr = 0)
+// 5: blocked			(killed = false; unkillable = false; blocked_ptr = TASK)
+// 6: blocked unkill		(killed = false; unkillable = TRUE;  blocked_ptr = TASK)
+// 7: blocked unkill + pend	(killed = TRUE;  unkillable = TRUE;  blocked_ptr = TASK)
+
+// Possible operations:
+// Block:		1->5, 2->fail, 3->5, 4->5
+// Unblock:		5->1, 6->3, 7->4
+// Become unkillable:	1->3, 2->fail, 3->3, 4->4
+// Become killable:	1->1, 2->fail, 3->1, 4->fail
+// Kill:		1->2, 2->2, 3->4, 4->4, 5->2, 6->7, 7->7
+
+
+/*
+
+   killer:
+   match handle.unkillable.swap(KILLED) { // maybe this can be nonatomic???
+   	KILLABLE => {
+   		match handle.blocked_task.swap(KILLED) {
+			RUNNING => { } // they'll get it later
+			KILLED => { } // already killed; someone else
+			task_ptr => {
+				sched.enqueue_task(task_ptr);
+			}
+		}
+	}
+	UNKILLABLE => { } // they'll deal with it later; nothing to do
+	KILLED => { } // someone else already killed; nothing to do
+   }
+
+   unkillable:
+
+   if task.disallow_kill++ == 0 {
+   	match task.handle.unkillable.swap(UNKILLABLE) {
+   		KILLED => fail!(), // not super important
+   		UNKILLABLE => rtassert!(false)
+   		KILLABLE => { }
+   	}
+   }
+
+   rekillable:
+
+   if --task.disallow_kill == 0 {
+   	match task.handle.unkillable.swap(KILLABLE) {
+   		KILLED => fail!(), // more important than above
+   		KILLABLE => rtassert!(false)
+   		UNKILLABLE => { }
+   	}
+   }
+
+*/
+
+// State values for the 'killed' and 'unkillable' atomic flags below.
+static KILL_RUNNING:    uint = 0;
+static KILL_KILLED:     uint = 1;
+static KILL_UNKILLABLE: uint = 2;
+
+/// State shared between tasks used for task killing during linked failure.
 // FIXME(#7544)(bblum): think about the cache efficiency of this
 struct KillHandleInner {
-    // Does the task need to die?
-    killed: bool,
-    // Has the task requested not to be killed temporarily?
-    unkillable: bool,
-    // A possibly-null pointer for punting the task awake if it's blocked.
-    // If non-null, points to the state flag of the blocked-on packet's port.
-    blocked_on_port: *mut util::Void,
-    // Protects (sometimes) 'killed', 'unkillable', and 'blocked_on_port'.
-    kill_lock: LittleLock,
+    // Is the task running, blocked, or killed? Possible values:
+    // * KILL_RUNNING    - Not unkillable, no kill pending.
+    // * KILL_KILLED     - Kill pending.
+    // * <ptr>           - A transmuted blocked ~Task pointer.
+    // This flag is refcounted because it may also be referenced by a blocking
+    // concurrency primitive, used to wake the task normally, whose reference
+    // may outlive the handle's if the task is killed.
+    killed: UnsafeAtomicRcBox<AtomicUint>,
+    // Has the task deferred kill signals? This flag guards the above one.
+    // Possible values:
+    // * KILL_RUNNING    - Not unkillable, no kill pending.
+    // * KILL_KILLED     - Kill pending.
+    // * KILL_UNKILLABLE - Kill signals deferred.
+    unkillable: AtomicUint,
 
     // Shared state between task and children for exit code propagation. These
     // are here so we can re-use the kill handle to implement watched children
@@ -50,15 +117,58 @@ impl KillHandle {
     pub fn new() -> KillHandle {
         KillHandle(UnsafeAtomicRcBox::new(KillHandleInner {
             // Linked failure fields
-            killed:           false,
-            unkillable:       false,
-            blocked_on_port:  ptr::mut_null(),
-            kill_lock:        LittleLock(),
+            killed:     UnsafeAtomicRcBox::new(AtomicUint::new(KILL_RUNNING)),
+            unkillable: AtomicUint::new(KILL_RUNNING),
             // Exit code propagation fields
             any_child_failed: false,
             child_tombstones: None,
             graveyard_lock:   LittleLock(),
         }))
+    }
+
+    // Will begin unwinding if a kill signal was received.
+    pub fn inhibit_kill(&mut self) {
+        // This function can't be used recursively, because a task which sees
+        // a KILLED signal must fail immediately, which an already-unkillable
+        // task cannot do.
+        let inner = unsafe { &mut *self.get() };
+        // Expect flag to contain RUNNING. If KILLED, it should stay KILLED.
+        // TODO: is it necessary to prohibit double kill?
+        match inner.unkillable.compare_and_swap(KILL_RUNNING, KILL_UNKILLABLE, SeqCst) {
+            KILL_RUNNING    => { }, // normal case
+            KILL_KILLED     => fail!("task killed"),
+            _               => rtabort!("inhibit_kill: task already unkillable"),
+        }
+    }
+
+    pub fn allow_kill(&mut self) {
+        let inner = unsafe { &mut *self.get() };
+        // Expect flag to contain UNKILLABLE. If KILLED, it should stay KILLED.
+        // TODO: is it necessary to prohibit double kill?
+        match inner.unkillable.compare_and_swap(KILL_UNKILLABLE, KILL_RUNNING, SeqCst) {
+            KILL_UNKILLABLE => { }, // normal case
+            KILL_KILLED     => fail!("task killed"),
+            _               => rtabort!("allow_kill: task already killable"),
+        }
+    }
+
+    pub fn kill(&mut self) {
+        let inner = unsafe { &mut *self.get() };
+        if inner.unkillable.swap(KILL_KILLED, SeqCst) == KILL_RUNNING {
+            // Got in. Allowed to try to punt the task awake.
+            let flag = unsafe { &mut *inner.killed.get() };
+            match flag.swap(KILL_KILLED, SeqCst) {
+                KILL_RUNNING | KILL_KILLED => { },
+                task_ptr => {
+                    let blocked_task: ~Task = unsafe { cast::transmute(task_ptr) };
+                    let sched = Local::take::<Scheduler>();
+                    sched.schedule_task(blocked_task);
+                }
+            }
+        } else {
+            // Otherwise it was either unkillable or already killed. Somebody
+            // else was here first who will deal with the kill signal.
+        }
     }
 
     pub fn notify_immediate_failure(&mut self) {
