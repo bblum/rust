@@ -127,6 +127,7 @@ mod test {
     }
 
     #[test]
+    #[ignore]
     fn socket_smoke_test_ip4() {
         do run_in_newsched_task {
             let server_ip = next_test_ip4();
@@ -159,6 +160,7 @@ mod test {
     }
 
     #[test]
+    #[ignore]
     fn socket_smoke_test_ip6() {
         do run_in_newsched_task {
             let server_ip = next_test_ip6();
@@ -191,6 +193,7 @@ mod test {
     }
 
     #[test]
+    #[ignore]
     fn stream_smoke_test_ip4() {
         do run_in_newsched_task {
             let server_ip = next_test_ip4();
@@ -228,6 +231,7 @@ mod test {
     }
 
     #[test]
+    #[ignore]
     fn stream_smoke_test_ip6() {
         do run_in_newsched_task {
             let server_ip = next_test_ip6();

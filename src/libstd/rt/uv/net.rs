@@ -644,6 +644,7 @@ mod test {
     }
 
     #[test]
+    #[ignore]
     fn udp_bind_close_ip4() {
         do run_in_bare_thread() {
             let mut loop_ = Loop::new();
@@ -657,6 +658,7 @@ mod test {
     }
 
     #[test]
+    #[ignore]
     fn udp_bind_close_ip6() {
         do run_in_bare_thread() {
             let mut loop_ = Loop::new();
@@ -818,6 +820,7 @@ mod test {
     }
 
     #[test]
+    #[ignore]
     fn udp_recv_ip4() {
         do run_in_bare_thread() {
             static MAX: int = 10;
@@ -877,6 +880,7 @@ mod test {
     }
 
     #[test]
+    #[ignore]
     fn udp_recv_ip6() {
         do run_in_bare_thread() {
             static MAX: int = 10;

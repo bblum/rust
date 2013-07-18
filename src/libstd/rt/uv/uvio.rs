@@ -827,6 +827,7 @@ fn test_simple_io_no_connect() {
 }
 
 #[test]
+#[ignore]
 fn test_simple_udp_io_bind_only() {
     do run_in_newsched_task {
         unsafe {
@@ -870,6 +871,7 @@ fn test_simple_tcp_server_and_client() {
 }
 
 #[test]
+#[ignore]
 fn test_simple_udp_server_and_client() {
     do run_in_newsched_task {
         let server_addr = next_test_ip4();
@@ -993,6 +995,7 @@ fn test_read_read_read() {
 }
 
 #[test]
+#[ignore]
 fn test_udp_twice() {
     do run_in_newsched_task {
         let server_addr = next_test_ip4();
@@ -1027,6 +1030,7 @@ fn test_udp_twice() {
 }
 
 #[test]
+#[ignore]
 fn test_udp_many_read() {
     do run_in_newsched_task {
         let server_out_addr = next_test_ip4();
