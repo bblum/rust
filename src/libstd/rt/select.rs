@@ -58,6 +58,11 @@ pub fn select<A: Select>(ports: &mut [A]) -> uint {
             // If one of the ports has data by now, it will wake the handle.
             if port.block_on(sched, task_handle) {
                 ready_index = index;
+                // Remove task pointer from the port's state flag (as this port
+                // won't be part of the slice that's unblocked from, below).
+                // NB. Not necessary in test builds, where the unblock is done
+                // inside block_on() for the corresponding assert in recv_ready.
+                assert!(port.unblock_from());
                 break;
             }
         }
