@@ -19,7 +19,7 @@ use kinds::Send;
 use rt::sched::Scheduler;
 use rt::local::Local;
 use rt::select::{Select, SelectPort};
-use unstable::atomics::{AtomicUint, AtomicOption, Acquire, SeqCst};
+use unstable::atomics::{AtomicUint, AtomicOption, Acquire, Release, SeqCst};
 use unstable::sync::UnsafeAtomicRcBox;
 use util::Void;
 use comm::{GenericChan, GenericSmartChan, GenericPort, Peekable};
@@ -219,15 +219,17 @@ impl<T> Select for PortOne<T> {
                     rtdebug!("rendezvous recv");
                     sched.metrics.rendezvous_recvs += 1;
 
+                    // Re-record that we are the only owner of the packet.
+                    // Release barrier needed in case the task gets reawoken
+                    // on a different core. FIXME Is that right? Not SeqCsT?
+                    (*self.packet()).state.store(STATE_ONE, Release);
+
                     // Channel is closed. Switch back and check the data.
                     // NB: We have to drop back into the scheduler event loop here
                     // instead of switching immediately back or we could end up
                     // triggering infinite recursion on the scheduler's stack.
                     let recvr = BlockedTask::cast_from_uint(task_as_state);
                     sched.enqueue_blocked_task(recvr);
-                    // FIXME(#6842): This breaks some invariant in SharedPort
-                    // and I don't know why yet. --bblum
-                    // (*self.packet()).state.store(STATE_ONE, Release);
                     true
                 }
                 _ => util::unreachable()
@@ -290,8 +292,8 @@ impl<T> SelectPort<T> for PortOne<T> {
         //    is pinned to some other scheduler, so the sending task had to give us to
         //    a different scheduler for resuming. That send synchronized memory.
         unsafe {
-            // FIXME(#6842): As above fixme, breaks in SharedPort.
-            // assert!((*packet).state.load(Acquire) == STATE_ONE);
+            // See corresponding store() above in block_on for rationale.
+            assert!((*packet).state.load(Acquire) == STATE_ONE);
 
             let payload = (*packet).payload.take();
 
