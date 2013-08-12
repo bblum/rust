@@ -22,7 +22,7 @@ use prelude::*;
 use option::{Option, Some, None};
 use rt::borrowck;
 use rt::borrowck::BorrowRecord;
-use rt::env;
+use rt::{env, unwatched_task_spawned, unwatched_task_exited};
 use rt::kill::Death;
 use rt::local::Local;
 use rt::logging::StdErrLogger;
@@ -227,6 +227,13 @@ impl Task {
     pub fn run(&mut self, f: &fn()) {
         rtdebug!("run called on task: %u", borrow::to_uint(self));
 
+        let was_unwatched = self.death.watching_parent.is_none();
+        if was_unwatched {
+            // This task has no watching parent, so it may outlive all other tasks.
+            // Hence it must participate in the global population count of task trees.
+            unwatched_task_spawned();
+        }
+
         // The only try/catch block in the world. Attempt to run the task's
         // client-specified code and catch any failures.
         do self.unwinder.try {
@@ -268,6 +275,13 @@ impl Task {
         // taskgroup destruction code drops references on KillHandles, which
         // might require using unkillable (to synchronize with an unwrapper).
         self.death.collect_failure(!self.unwinder.unwinding, self.taskgroup.take());
+
+        // Corresponding to the 'spawned' call at the top of this function.
+        // Must happen after collect_failure so main's exit_job can run first.
+        if was_unwatched {
+            unwatched_task_exited();
+        }
+
         self.destroyed = true;
     }
 

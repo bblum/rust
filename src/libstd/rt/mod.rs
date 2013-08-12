@@ -64,17 +64,16 @@ use cell::Cell;
 use clone::Clone;
 use container::Container;
 use iterator::{Iterator, range};
-use option::{Some, None};
+use option::{Option, Some, None};
 use ptr::RawPtr;
 use rt::local::Local;
-use rt::sched::{Scheduler, Shutdown};
+use rt::sched::{Scheduler, SchedHandle, Shutdown};
 use rt::sleeper_list::SleeperList;
 use rt::task::{Task, SchedTask, GreenTask, Sched};
 use rt::thread::Thread;
 use rt::work_queue::WorkQueue;
 use rt::uv::uvio::UvEventLoop;
-use unstable::atomics::{AtomicInt, SeqCst};
-use unstable::sync::UnsafeAtomicRcBox;
+use unstable::atomics::{AtomicInt, AtomicUint, Acquire, AcqRel, SeqCst};
 use vec::{OwnedVector, MutableVector};
 
 /// The global (exchange) heap.
@@ -249,8 +248,6 @@ pub fn run_on_main_thread(main: ~fn()) -> int {
 }
 
 fn run_(main: ~fn(), use_main_sched: bool) -> int {
-    static DEFAULT_ERROR_CODE: int = 101;
-
     let nscheds = util::default_sched_threads();
 
     let main = Cell::new(main);
@@ -314,34 +311,18 @@ fn run_(main: ~fn(), use_main_sched: bool) -> int {
         None
     };
 
-    // Create a shared cell for transmitting the process exit
-    // code from the main task to this function.
-    let exit_code = UnsafeAtomicRcBox::new(AtomicInt::new(0));
-    let exit_code_clone = exit_code.clone();
+    // TODO comment
+    unsafe {
+        exit_sched_handles = Some(handles);
+        exit_code          = Some(AtomicInt::new(0));
+        population_count   = Some(AtomicUint::new(0));
+    }
 
-    // When the main task exits, after all the tasks in the main
-    // task tree, shut down the schedulers and set the exit code.
-    let handles = Cell::new(handles);
-    let on_exit: ~fn(bool) = |exit_success| {
-        assert_once_ever!("last task exiting");
-
-        let mut handles = handles.take();
-        for handle in handles.mut_iter() {
-            handle.send(Shutdown);
-        }
-
-        unsafe {
-            let exit_code = if exit_success {
-                use rt::util;
-
-                // If we're exiting successfully, then return the global
-                // exit status, which can be set programmatically.
-                util::get_exit_status()
-            } else {
-                DEFAULT_ERROR_CODE
-            };
-            (*exit_code_clone.get()).store(exit_code, SeqCst);
-        }
+    let on_exit: ~fn(bool) = |exit_status| {
+        assert_once_ever!("main task exiting");
+        /* Write protected by acqrel barrier on the population count, below. */
+        unsafe { main_task_success = exit_status; }
+        /* (call to unwatched_task_exited occurs in task::run()) */
     };
 
     let mut threads = ~[];
@@ -407,9 +388,51 @@ fn run_(main: ~fn(), use_main_sched: bool) -> int {
 
     // Return the exit code
     unsafe {
-        (*exit_code.get()).load(SeqCst)
+        (*exit_code.get_mut_ref()).load(SeqCst)
     }
 }
+
+/* For end-time scheduler shutdown. */
+
+static mut exit_sched_handles: Option<~[SchedHandle]> = None;
+static mut exit_code:          Option<AtomicInt> = None;
+static mut population_count:   Option<AtomicUint> = None;
+static mut main_task_success:  bool = true;
+
+pub fn unwatched_task_spawned() {
+    unsafe { population_count.get_mut_ref().fetch_add(1, Acquire); }
+}
+
+pub fn unwatched_task_exited() {
+    static DEFAULT_ERROR_CODE: int = 101;
+
+    let old_count = unsafe { population_count.get_mut_ref().fetch_sub(1, AcqRel) };
+    assert!(old_count > 0);
+    if old_count == 1 {
+        assert_once_ever!("last task exiting, shutting down schedulers");
+        let mut handles = unsafe { exit_sched_handles.take_unwrap() };
+
+        for handle in handles.mut_iter() {
+            handle.send(Shutdown);
+        }
+
+        unsafe {
+            /* Read of main_task_success protected by acq/rel on population count. */
+            let exit_status = if main_task_success {
+                use rt::util;
+
+                // If we're exiting successfully, then return the global
+                // exit status, which can be set programmatically.
+                util::get_exit_status()
+            } else {
+                DEFAULT_ERROR_CODE
+            };
+            (*exit_code.get_mut_ref()).store(exit_status, SeqCst);
+        }
+    }
+}
+
+/* Context */
 
 pub fn in_sched_context() -> bool {
     unsafe {
